@@ -215,27 +215,27 @@ class PlanVisualizer:
         output_path = self.args.output
         if output_path.endswith('.html'):
             # For HTML, we'll create an SVG and embed it
-            format = 'svg'
+            output_format = 'svg'
         else:
             # Extract format from extension
             parts = output_path.rsplit('.', 1)
             if len(parts) == 2:
-                format = parts[1].lower()
+                output_format = parts[1].lower()
                 output_path = parts[0]
             else:
-                format = 'png'
+                output_format = 'png'
 
         if self.args.group_by_pid:
             # Create separate graphs for each PID
             for pid in self.plans_by_pid.keys():
                 dot = self.create_graph(pid)
                 output_file = f"{output_path}_pid{pid}"
-                self.log(f"Rendering graph for PID {pid} to {output_file}.{format}")
-                dot.render(output_file, format=format, cleanup=True)
+                self.log(f"Rendering graph for PID {pid} to {output_file}.{output_format}")
+                dot.render(output_file, format=output_format, cleanup=True)
         else:
             # Create single graph for all PIDs
             dot = self.create_graph()
-            self.log(f"Rendering graph to {output_path}.{format}")
+            self.log(f"Rendering graph to {output_path}.{output_format}")
             
             if self.args.output.endswith('.html'):
                 # Create HTML with embedded SVG
@@ -289,8 +289,8 @@ class PlanVisualizer:
                     f.write(html_content)
                 self.log(f"HTML file created: {self.args.output}")
             else:
-                dot.render(output_path, format=format, cleanup=True)
-                self.log(f"Graph file created: {output_path}.{format}")
+                dot.render(output_path, format=output_format, cleanup=True)
+                self.log(f"Graph file created: {output_path}.{output_format}")
 
         self.log("Visualization complete")
 

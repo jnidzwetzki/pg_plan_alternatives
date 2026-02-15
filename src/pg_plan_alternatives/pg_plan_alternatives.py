@@ -100,9 +100,6 @@ class PlanAlternativesTracer:
         self.plans_by_query = {}
         self.query_counter = 0
 
-        if args.output:
-            self.output_file = open(args.output, 'w')
-
     def __del__(self):
         if self.output_file:
             self.output_file.close()
@@ -214,25 +211,36 @@ class PlanAlternativesTracer:
         """Main run loop"""
         self.setup_bpf()
         
-        self.log("Tracing plan alternatives... Hit Ctrl-C to end.")
+        # Open output file if specified
+        if self.args.output:
+            try:
+                self.output_file = open(self.args.output, 'w')
+            except IOError as e:
+                print(f"Error opening output file: {e}", file=sys.stderr)
+                sys.exit(1)
         
-        # Print header
-        if not self.args.json:
-            self.output("=" * 80)
-            self.output("PostgreSQL Plan Alternatives Tracer")
-            self.output(f"Binary: {self.args.exec}")
-            if self.args.pids:
-                self.output(f"PIDs: {', '.join(map(str, self.args.pids))}")
-            else:
-                self.output("Tracing all PostgreSQL processes")
-            self.output("=" * 80)
-
-        # Poll for events
         try:
+            self.log("Tracing plan alternatives... Hit Ctrl-C to end.")
+            
+            # Print header
+            if not self.args.json:
+                self.output("=" * 80)
+                self.output("PostgreSQL Plan Alternatives Tracer")
+                self.output(f"Binary: {self.args.exec}")
+                if self.args.pids:
+                    self.output(f"PIDs: {', '.join(map(str, self.args.pids))}")
+                else:
+                    self.output("Tracing all PostgreSQL processes")
+                self.output("=" * 80)
+
+            # Poll for events
             while True:
                 self.bpf.perf_buffer_poll()
         except KeyboardInterrupt:
             self.log("\nDetaching...")
+        finally:
+            if self.output_file:
+                self.output_file.close()
 
 
 def main():

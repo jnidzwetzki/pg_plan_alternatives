@@ -87,7 +87,7 @@ static void fill_basic_data(PlanEvent *event) {
  */
 static u64 read_double_as_fixed(void *ptr) {
     double value;
-    bpf_probe_read_kernel(&value, sizeof(double), ptr);
+    bpf_probe_read_user(&value, sizeof(double), ptr);
     // Convert to fixed-point with 3 decimal places
     return (u64)(value * 1000.0);
 }
@@ -106,7 +106,7 @@ int bpf_add_path(struct pt_regs *ctx) {
     
     // Read Path structure fields
     // Offset 0: NodeTag type (4 bytes)
-    bpf_probe_read_kernel(&event.path_type, sizeof(u32), new_path);
+    bpf_probe_read_user(&event.path_type, sizeof(u32), new_path);
     
     // The exact offsets depend on PostgreSQL version and architecture
     // For 64-bit systems with typical alignment:
@@ -129,7 +129,7 @@ int bpf_add_path(struct pt_regs *ctx) {
     // Read parent RelOptInfo fields
     // RelOptInfo has relids at various offsets depending on version
     // We'll try to read what we can
-    bpf_probe_read_kernel(&event.parent_relid, sizeof(u32), parent_rel + 32);
+    bpf_probe_read_user(&event.parent_relid, sizeof(u32), parent_rel + 32);
     
     // For IndexPath and similar, there's a 'path' substructure first
     // then additional fields like indexinfo
@@ -137,7 +137,7 @@ int bpf_add_path(struct pt_regs *ctx) {
     
     // Try to read rows estimate from parent RelOptInfo
     double rows_estimate;
-    bpf_probe_read_kernel(&rows_estimate, sizeof(double), parent_rel + 16);
+    bpf_probe_read_user(&rows_estimate, sizeof(double), parent_rel + 16);
     event.rows = (u64)rows_estimate;
     
     planevents.perf_submit(ctx, &event, sizeof(PlanEvent));
@@ -158,7 +158,7 @@ int bpf_create_plan(struct pt_regs *ctx) {
     }
     
     // Read path type
-    bpf_probe_read_kernel(&event.path_type, sizeof(u32), path);
+    bpf_probe_read_user(&event.path_type, sizeof(u32), path);
     
     // Read costs
     void *startup_cost_ptr = path + 40;
