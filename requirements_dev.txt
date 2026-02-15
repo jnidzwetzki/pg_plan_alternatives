@@ -1,0 +1,6 @@
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pylint>=2.15.0
+black>=22.0.0
+mypy>=0.990
+graphviz>=0.20
