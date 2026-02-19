@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include requirements_dev.txt
+recursive-include src/pg_plan_alternatives/bpf *.c
+recursive-include examples *.md

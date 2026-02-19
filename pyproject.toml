@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=59"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pg_plan_alternatives"
+description = "An eBPF-based tool to show all query plans considered by PostgreSQL during query planning"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+	{ name = "Jan Nidzwetzki", email = "jnidzwetzki@gmx.de" },
+]
+keywords = ["postgresql", "postgres", "ebpf", "query-planning", "optimizer"]
+classifiers = [
+	"Development Status :: 4 - Beta",
+	"Intended Audience :: Developers",
+	"Operating System :: POSIX :: Linux",
+	"Programming Language :: Python",
+	"Topic :: Software Development :: Debuggers"
+]
+dependencies = [
+	"graphviz",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/jnidzwetzki/pg_plan_alternatives"
+"Bug Tracker" = "https://github.com/jnidzwetzki/pg_plan_alternatives/issues"
+
+[project.scripts]
+pg_plan_alternatives = "pg_plan_alternatives.pg_plan_alternatives:main"
+visualize_plan_graph = "pg_plan_alternatives.visualize_plan_graph:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"pg_plan_alternatives.bpf" = ["*.c"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pg_plan_alternatives.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests/"]
+addopts = [
+	"--verbose",
+	"--ignore-glob=**/_*.py",
+]
