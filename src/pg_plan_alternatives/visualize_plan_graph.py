@@ -188,8 +188,8 @@ class PlanVisualizer:
             ]
 
         self.log(f"Creating graph: {graph_name}")
-        self.log(f"  Plans considered: {len(events)}")
-        self.log(f"  Plans chosen: {len(chosen)}")
+        self.log(f"  Paths considered: {len(events)}")
+        self.log(f"  Paths chosen: {len(chosen)}")
 
         # Create graphviz graph
         dot = graphviz.Digraph(comment=graph_name)
@@ -305,31 +305,42 @@ class PlanVisualizer:
             event_records.append((node_id, event))
 
         # Group base relation alternatives into dedicated clusters.
-        for cluster_index, cluster_key in enumerate(
-            sorted(relation_cluster_nodes.keys(), key=self._cluster_sort_key)
-        ):
-            event_pid, parent_rti, parent_rel_oid = cluster_key
-            oid_label = f"OID {parent_rel_oid}" if parent_rel_oid else "OID n/a"
-            cluster_name = f"cluster_rel_{cluster_index}"
-            with dot.subgraph(name=cluster_name) as rel_cluster:
-                rel_cluster.attr(
-                    label=f"Relation RTI {parent_rti} ({oid_label})",
-                    color="gray65",
-                    style="rounded,dashed",
-                    penwidth="1.2",
-                    fontname="Arial",
-                    fontsize="10",
-                )
-                if pid is None:
-                    rel_cluster.attr(
-                        label=f"PID {event_pid} • Relation RTI {parent_rti} ({oid_label})"
-                    )
-                rel_cluster.attr(rank="same")
-                for node_id, _ in sorted(
-                    relation_cluster_nodes[cluster_key],
-                    key=lambda item: item[1].get("timestamp", 0),
+        # To ensure they remain on the left edge of the layout we wrap
+        # the individual relation clusters inside an additional outer
+        # "left" cluster.  By using rank="source" we coerce Graphviz
+        # to treat the entire collection as the source rank, pushing the
+        # group to the very leftmost side of the graph (rankdir=LR).
+        with dot.subgraph(name="cluster_left") as left_outer:
+            # outermost container forces source rank for maximum leftness
+            left_outer.attr(rank="source")
+            with left_outer.subgraph(name="cluster_relations") as main_rel:
+                main_rel.attr(rank="source")
+                for cluster_index, cluster_key in enumerate(
+                    sorted(relation_cluster_nodes.keys(), key=self._cluster_sort_key)
                 ):
-                    rel_cluster.node(node_id)
+                    event_pid, parent_rti, parent_rel_oid = cluster_key
+                    oid_label = f"OID {parent_rel_oid}" if parent_rel_oid else "OID n/a"
+                    cluster_name = f"cluster_rel_{cluster_index}"
+                    # create a nested subgraph for each relation cluster
+                    with main_rel.subgraph(name=cluster_name) as rel_cluster:
+                        rel_cluster.attr(
+                            label=f"Relation RTI {parent_rti} ({oid_label})",
+                            color="gray65",
+                            style="rounded,dashed",
+                            penwidth="1.2",
+                            fontname="Arial",
+                            fontsize="10",
+                        )
+                        if pid is None:
+                            rel_cluster.attr(
+                                label=f"PID {event_pid} • Relation RTI {parent_rti} ({oid_label})"
+                            )
+                        rel_cluster.attr(rank="same")
+                        for node_id, _ in sorted(
+                            relation_cluster_nodes[cluster_key],
+                            key=lambda item: item[1].get("timestamp", 0),
+                        ):
+                            rel_cluster.node(node_id)
 
         # Group join alternatives into dedicated clusters.
         for cluster_index, cluster_key in enumerate(
@@ -385,6 +396,7 @@ class PlanVisualizer:
                     color="gray50",
                     xlabel="alt",
                     constraint="false",
+                    arrowhead="none",
                 )
 
         # Use CREATE_PLAN events only to identify matching ADD_PATH nodes.
@@ -515,7 +527,7 @@ class PlanVisualizer:
 
             stats_label = (
                 f"Statistics\\n"
-                f"Total plans considered: {total_plans}\\n"
+                f"Total paths considered: {total_plans}\\n"
                 f"Cheapest: {cheapest_plan.get('path_type')} ({cheapest_plan.get('total_cost', 0):.2f})\\n"
                 f"Most expensive: {most_expensive_plan.get('path_type')} ({most_expensive_plan.get('total_cost', 0):.2f})"
             )
