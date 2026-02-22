@@ -1,6 +1,9 @@
 # pg_plan_alternatives: A PostgreSQL Plan Alternatives Tracer
 [![Basic Integration Tests](https://github.com/jnidzwetzki/pg_plan_alternatives/actions/workflows/integration_tests.yml/badge.svg)](https://github.com/jnidzwetzki/pg_plan_alternatives/actions/workflows/integration_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/pg_plan_alternatives?color=green)](https://pypi.org/project/pg_plan_alternatives/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pg_plan_alternatives)](https://pypi.org/project/pg_plan_alternatives/)
+[![Release date](https://img.shields.io/github/release-date/jnidzwetzki/pg_plan_alternatives)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 [![GitHub Repo stars](https://img.shields.io/github/stars/jnidzwetzki/pg_plan_alternatives?style=social)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 
 An eBPF-based tool designed to show **all query plans** that are considered by PostgreSQL during query planning, not just the final chosen plan as shown in `EXPLAIN` output. 
@@ -160,7 +163,7 @@ From this JSON file, we can generate a graph visualization. The `--db-url` optio
 $ visualize_plan_graph -i examples/select.json -o examples/select.svg --db-url psql://localhost/jan2 -v 
 ```
 
-![Select plan alternatives](examples/select.svg)
+![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select.svg)
 
 ### SELECT with a simple WHERE clause:
 
@@ -202,7 +205,7 @@ jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 WHERE id = 5;
 
 The visualization of the alternatives for this query looks like this:
 
-![Select plan alternatives](examples/select_where.svg)
+![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select_where.svg)
 
 ### JOIN
 
@@ -279,7 +282,7 @@ jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 LEFT JOIN test2 ON (test1.
 
 The visualization of the alternatives for this query looks like this:
 
-![Select plan alternatives](examples/join.svg)
+![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/join.svg)
 
 
 ### JOIN with a WHERE clause
@@ -344,7 +347,7 @@ jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 LEFT JOIN test2 ON (test1.
 
 The visualization of the alternatives for this query looks like this:
 
-![Select plan alternatives](examples/select_where.svg)
+![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/join_where.svg)
 
 ## 🎨 Visualization
 
