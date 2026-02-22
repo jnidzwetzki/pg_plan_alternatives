@@ -12,13 +12,9 @@ import argparse
 import sys
 from collections import defaultdict
 
-try:
-    import graphviz
-except ImportError:
-    print("Error: graphviz package is required for visualization", file=sys.stderr)
-    print("Install with: pip install graphviz", file=sys.stderr)
-    sys.exit(1)
+import graphviz
 
+from pg_plan_alternatives.helper import OIDResolver
 from pg_plan_alternatives import __version__
 
 EXAMPLES = """
@@ -74,6 +70,12 @@ parser.add_argument(
     action="store_true",
     help="be verbose",
 )
+parser.add_argument(
+    "--db-url",
+    dest="db_url",
+    type=str,
+    help="Postgres connection URL used to resolve relation OIDs into names",
+)
 
 
 class PlanVisualizer:
@@ -84,6 +86,34 @@ class PlanVisualizer:
         self.events = []
         self.plans_by_pid = defaultdict(list)
         self.chosen_plans = defaultdict(list)
+
+        # resolver used when the user passes --db-url
+        self.oid_resolver = None
+        if getattr(self.args, "db_url", None):
+            self.oid_resolver = OIDResolver(self.args.db_url)
+
+    def _format_oid_line(self, role, oid):
+        """Return a formatted line describing *oid* for a node label."""
+        if not oid:
+            return ""
+        if self.oid_resolver:
+            name = self.oid_resolver.resolve_oid(oid)
+            return f"{role}: {name} ({oid})"
+        return f"{role} OID: {oid}"
+
+    def _format_oid_label(self, oid):
+        """Format an OID for cluster labels.
+
+        When a resolver is present return ``name (oid)``; otherwise a simple
+        ``OID <n>`` string is produced.  ``None`` or zero values yield
+        ``"OID n/a"``.
+        """
+        if not oid:
+            return "OID n/a"
+        if self.oid_resolver:
+            name = self.oid_resolver.resolve_oid(oid)
+            return f"{name} ({oid})"
+        return f"OID {oid}"
 
     def log(self, message):
         """Print verbose message"""
@@ -192,7 +222,7 @@ class PlanVisualizer:
         self.log(f"  Paths chosen: {len(chosen)}")
 
         # Create graphviz graph
-        dot = graphviz.Digraph(comment=graph_name)
+        dot: "graphviz.Digraph" = graphviz.Digraph(comment=graph_name)
         dot.attr(
             rankdir="LR",
             splines="spline",
@@ -263,11 +293,11 @@ class PlanVisualizer:
             penwidth = "1"
             oid_lines = []
             if parent_rel_oid:
-                oid_lines.append(f"Parent OID: {parent_rel_oid}")
+                oid_lines.append(self._format_oid_line("Parent", parent_rel_oid))
             if outer_rel_oid:
-                oid_lines.append(f"Outer OID: {outer_rel_oid}")
+                oid_lines.append(self._format_oid_line("Outer", outer_rel_oid))
             if inner_rel_oid:
-                oid_lines.append(f"Inner OID: {inner_rel_oid}")
+                oid_lines.append(self._format_oid_line("Inner", inner_rel_oid))
 
             oid_text = ""
             if oid_lines:
@@ -310,19 +340,19 @@ class PlanVisualizer:
         # "left" cluster.  By using rank="source" we coerce Graphviz
         # to treat the entire collection as the source rank, pushing the
         # group to the very leftmost side of the graph (rankdir=LR).
-        with dot.subgraph(name="cluster_left") as left_outer:
+        with dot.subgraph(name="cluster_left") as left_outer:  # type: ignore
             # outermost container forces source rank for maximum leftness
             left_outer.attr(rank="source")
-            with left_outer.subgraph(name="cluster_relations") as main_rel:
+            with left_outer.subgraph(name="cluster_relations") as main_rel:  # type: ignore
                 main_rel.attr(rank="source")
                 for cluster_index, cluster_key in enumerate(
                     sorted(relation_cluster_nodes.keys(), key=self._cluster_sort_key)
                 ):
                     event_pid, parent_rti, parent_rel_oid = cluster_key
-                    oid_label = f"OID {parent_rel_oid}" if parent_rel_oid else "OID n/a"
+                    oid_label = self._format_oid_label(parent_rel_oid)
                     cluster_name = f"cluster_rel_{cluster_index}"
                     # create a nested subgraph for each relation cluster
-                    with main_rel.subgraph(name=cluster_name) as rel_cluster:
+                    with main_rel.subgraph(name=cluster_name) as rel_cluster:  # type: ignore
                         rel_cluster.attr(
                             label=f"Relation RTI {parent_rti} ({oid_label})",
                             color="gray65",
@@ -358,14 +388,14 @@ class PlanVisualizer:
             outer_label = (
                 f"RTI {outer_rti}"
                 if outer_rti
-                else f"OID {outer_rel_oid}" if outer_rel_oid else "n/a"
+                else self._format_oid_label(outer_rel_oid)
             )
             inner_label = (
                 f"RTI {inner_rti}"
                 if inner_rti
-                else f"OID {inner_rel_oid}" if inner_rel_oid else "n/a"
+                else self._format_oid_label(inner_rel_oid)
             )
-            with dot.subgraph(name=cluster_name) as join_cluster:
+            with dot.subgraph(name=cluster_name) as join_cluster:  # type: ignore
                 join_cluster.attr(
                     label=f"{join_type_name} (outer: {outer_label}, inner: {inner_label})",
                     color="lightsteelblue4",
@@ -452,11 +482,11 @@ class PlanVisualizer:
 
             oid_lines = []
             if parent_rel_oid:
-                oid_lines.append(f"Parent OID: {parent_rel_oid}")
+                oid_lines.append(self._format_oid_line("Parent", parent_rel_oid))
             if outer_rel_oid:
-                oid_lines.append(f"Outer OID: {outer_rel_oid}")
+                oid_lines.append(self._format_oid_line("Outer", outer_rel_oid))
             if inner_rel_oid:
-                oid_lines.append(f"Inner OID: {inner_rel_oid}")
+                oid_lines.append(self._format_oid_line("Inner", inner_rel_oid))
 
             oid_text = ""
             if oid_lines:

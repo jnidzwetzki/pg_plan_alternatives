@@ -87,6 +87,6 @@ jobs:
       - name: Check that visualize_plan_graph can be executed
         run: |
            visualize_plan_graph --version
-           visualize_plan_graph -i examples/selfjoin.json -o data.svg
+           visualize_plan_graph -i examples/join.json -o data.svg
            
 
