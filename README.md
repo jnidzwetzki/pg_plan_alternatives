@@ -369,6 +369,11 @@ Key instrumented functions:
 - **`add_path()`**: Called when a new query plan alternative is considered
 - **`create_plan()`**: Called when the chosen plan is converted to an execution plan
 
+## ⚠️ Known Limitations
+
+- Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below)
+- Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented)
+
 ## 📋 Requirements
 
 - Linux with eBPF support (kernel 4.9+)
