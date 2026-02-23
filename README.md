@@ -2,7 +2,7 @@
 [![Basic Integration Tests](https://github.com/jnidzwetzki/pg_plan_alternatives/actions/workflows/integration_tests.yml/badge.svg)](https://github.com/jnidzwetzki/pg_plan_alternatives/actions/workflows/integration_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://img.shields.io/pypi/v/pg_plan_alternatives?color=green)](https://pypi.org/project/pg_plan_alternatives/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/pg_plan_alternatives)](https://pypi.org/project/pg_plan_alternatives/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pg-plan-alternatives)](https://pypi.org/project/pg_plan_alternatives/)
 [![Release date](https://img.shields.io/github/release-date/jnidzwetzki/pg_plan_alternatives)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 [![GitHub Repo stars](https://img.shields.io/github/stars/jnidzwetzki/pg_plan_alternatives?style=social)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 
