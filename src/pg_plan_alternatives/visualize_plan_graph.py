@@ -202,6 +202,13 @@ class PlanVisualizer:
         )
         return (pid, join_type_name, outer_rti, inner_rti, outer_rel_oid, inner_rel_oid)
 
+    @staticmethod
+    def _format_cost(cost):
+        """Format costs with enough precision to differentiate alternatives."""
+        # Use 3 decimals to keep labels compact while preserving planner-level
+        # distinctions (e.g., 16.595 vs 16.600).
+        return f"{float(cost):.3f}"
+
     def create_graph(self, pid=None):
         """Create a graph for a specific PID or all PIDs"""
         if pid:
@@ -305,8 +312,8 @@ class PlanVisualizer:
 
             label = (
                 f"{path_type}\n"
-                f"Startup: {startup_cost:.2f}\n"
-                f"Total: {total_cost:.2f}\n"
+                f"Startup: {self._format_cost(startup_cost)}\n"
+                f"Total: {self._format_cost(total_cost)}\n"
                 f"Rows: {rows}"
                 f"{oid_text}"
             )
@@ -494,8 +501,8 @@ class PlanVisualizer:
 
             chosen_label = (
                 f"{path_type}\n[CHOSEN]\n"
-                f"Startup: {startup_cost:.2f}\n"
-                f"Total: {total_cost:.2f}\n"
+                f"Startup: {self._format_cost(startup_cost)}\n"
+                f"Total: {self._format_cost(total_cost)}\n"
                 f"Rows: {rows}"
                 f"{oid_text}"
             )

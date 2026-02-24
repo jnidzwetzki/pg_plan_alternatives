@@ -371,8 +371,10 @@ Key instrumented functions:
 
 ## ⚠️ Known Limitations
 
-- Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below)
-- Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented)
+- ⚠️ Early prototype implementation without extensive testing.
+- Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below).
+- Materialize nodes are not currently supported.
+- Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented).
 
 ## 📋 Requirements
 

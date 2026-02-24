@@ -37,8 +37,8 @@
 <title>plan_all_0</title>
 <path fill="lightblue" stroke="black" d="M245.72,-615C245.72,-615 140.72,-615 140.72,-615 134.72,-615 128.72,-609 128.72,-603 128.72,-603 128.72,-569 128.72,-569 128.72,-563 134.72,-557 140.72,-557 140.72,-557 245.72,-557 245.72,-557 251.72,-557 257.72,-563 257.72,-569 257.72,-569 257.72,-603 257.72,-603 257.72,-609 251.72,-615 245.72,-615"/>
 <text text-anchor="middle" x="193.22" y="-603.8" font-family="Arial" font-size="9.00">T_SeqScan</text>
-<text text-anchor="middle" x="193.22" y="-593.8" font-family="Arial" font-size="9.00">Startup: 0.00</text>
-<text text-anchor="middle" x="193.22" y="-583.8" font-family="Arial" font-size="9.00">Total: 17.50</text>
+<text text-anchor="middle" x="193.22" y="-593.8" font-family="Arial" font-size="9.00">Startup: 0.000</text>
+<text text-anchor="middle" x="193.22" y="-583.8" font-family="Arial" font-size="9.00">Total: 17.500</text>
 <text text-anchor="middle" x="193.22" y="-573.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-563.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
@@ -48,8 +48,8 @@
 <path fill="lightgreen" stroke="black" stroke-width="3" d="M245.72,-514C245.72,-514 140.72,-514 140.72,-514 134.72,-514 128.72,-508 128.72,-502 128.72,-502 128.72,-458 128.72,-458 128.72,-452 134.72,-446 140.72,-446 140.72,-446 245.72,-446 245.72,-446 251.72,-446 257.72,-452 257.72,-458 257.72,-458 257.72,-502 257.72,-502 257.72,-508 251.72,-514 245.72,-514"/>
 <text text-anchor="middle" x="193.22" y="-502.8" font-family="Arial" font-size="9.00">T_IndexOnlyScan</text>
 <text text-anchor="middle" x="193.22" y="-492.8" font-family="Arial" font-size="9.00">[CHOSEN]</text>
-<text text-anchor="middle" x="193.22" y="-482.8" font-family="Arial" font-size="9.00">Startup: 0.28</text>
-<text text-anchor="middle" x="193.22" y="-472.8" font-family="Arial" font-size="9.00">Total: 8.29</text>
+<text text-anchor="middle" x="193.22" y="-482.8" font-family="Arial" font-size="9.00">Startup: 0.275</text>
+<text text-anchor="middle" x="193.22" y="-472.8" font-family="Arial" font-size="9.00">Total: 8.293</text>
 <text text-anchor="middle" x="193.22" y="-462.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-452.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
@@ -64,8 +64,8 @@
 <title>plan_all_3</title>
 <path fill="lightblue" stroke="black" d="M245.72,-302C245.72,-302 140.72,-302 140.72,-302 134.72,-302 128.72,-296 128.72,-290 128.72,-290 128.72,-256 128.72,-256 128.72,-250 134.72,-244 140.72,-244 140.72,-244 245.72,-244 245.72,-244 251.72,-244 257.72,-250 257.72,-256 257.72,-256 257.72,-290 257.72,-290 257.72,-296 251.72,-302 245.72,-302"/>
 <text text-anchor="middle" x="193.22" y="-290.8" font-family="Arial" font-size="9.00">T_SeqScan</text>
-<text text-anchor="middle" x="193.22" y="-280.8" font-family="Arial" font-size="9.00">Startup: 0.00</text>
-<text text-anchor="middle" x="193.22" y="-270.8" font-family="Arial" font-size="9.00">Total: 17.50</text>
+<text text-anchor="middle" x="193.22" y="-280.8" font-family="Arial" font-size="9.00">Startup: 0.000</text>
+<text text-anchor="middle" x="193.22" y="-270.8" font-family="Arial" font-size="9.00">Total: 17.500</text>
 <text text-anchor="middle" x="193.22" y="-260.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-250.8" font-family="Arial" font-size="9.00">Parent: public.test2 (26149)</text>
 </g>
@@ -75,8 +75,8 @@
 <title>plan_all_2</title>
 <path fill="lightblue" stroke="black" d="M245.72,-403C245.72,-403 140.72,-403 140.72,-403 134.72,-403 128.72,-397 128.72,-391 128.72,-391 128.72,-357 128.72,-357 128.72,-351 134.72,-345 140.72,-345 140.72,-345 245.72,-345 245.72,-345 251.72,-345 257.72,-351 257.72,-357 257.72,-357 257.72,-391 257.72,-391 257.72,-397 251.72,-403 245.72,-403"/>
 <text text-anchor="middle" x="193.22" y="-391.8" font-family="Arial" font-size="9.00">T_BitmapHeapScan</text>
-<text text-anchor="middle" x="193.22" y="-381.8" font-family="Arial" font-size="9.00">Startup: 4.28</text>
-<text text-anchor="middle" x="193.22" y="-371.8" font-family="Arial" font-size="9.00">Total: 8.30</text>
+<text text-anchor="middle" x="193.22" y="-381.8" font-family="Arial" font-size="9.00">Startup: 4.283</text>
+<text text-anchor="middle" x="193.22" y="-371.8" font-family="Arial" font-size="9.00">Total: 8.295</text>
 <text text-anchor="middle" x="193.22" y="-361.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-351.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
@@ -92,8 +92,8 @@
 <path fill="lightgreen" stroke="black" stroke-width="3" d="M245.72,-201C245.72,-201 140.72,-201 140.72,-201 134.72,-201 128.72,-195 128.72,-189 128.72,-189 128.72,-145 128.72,-145 128.72,-139 134.72,-133 140.72,-133 140.72,-133 245.72,-133 245.72,-133 251.72,-133 257.72,-139 257.72,-145 257.72,-145 257.72,-189 257.72,-189 257.72,-195 251.72,-201 245.72,-201"/>
 <text text-anchor="middle" x="193.22" y="-189.8" font-family="Arial" font-size="9.00">T_IndexOnlyScan</text>
 <text text-anchor="middle" x="193.22" y="-179.8" font-family="Arial" font-size="9.00">[CHOSEN]</text>
-<text text-anchor="middle" x="193.22" y="-169.8" font-family="Arial" font-size="9.00">Startup: 0.28</text>
-<text text-anchor="middle" x="193.22" y="-159.8" font-family="Arial" font-size="9.00">Total: 8.29</text>
+<text text-anchor="middle" x="193.22" y="-169.8" font-family="Arial" font-size="9.00">Startup: 0.275</text>
+<text text-anchor="middle" x="193.22" y="-159.8" font-family="Arial" font-size="9.00">Total: 8.293</text>
 <text text-anchor="middle" x="193.22" y="-149.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-139.8" font-family="Arial" font-size="9.00">Parent: public.test2 (26149)</text>
 </g>
@@ -104,8 +104,8 @@
 <path fill="lightgreen" stroke="black" stroke-width="3" d="M589.22,-499C589.22,-499 488.22,-499 488.22,-499 482.22,-499 476.22,-493 476.22,-487 476.22,-487 476.22,-433 476.22,-433 476.22,-427 482.22,-421 488.22,-421 488.22,-421 589.22,-421 589.22,-421 595.22,-421 601.22,-427 601.22,-433 601.22,-433 601.22,-487 601.22,-487 601.22,-493 595.22,-499 589.22,-499"/>
 <text text-anchor="middle" x="538.72" y="-487.8" font-family="Arial" font-size="9.00">T_NestLoop</text>
 <text text-anchor="middle" x="538.72" y="-477.8" font-family="Arial" font-size="9.00">[CHOSEN]</text>
-<text text-anchor="middle" x="538.72" y="-467.8" font-family="Arial" font-size="9.00">Startup: 0.55</text>
-<text text-anchor="middle" x="538.72" y="-457.8" font-family="Arial" font-size="9.00">Total: 16.60</text>
+<text text-anchor="middle" x="538.72" y="-467.8" font-family="Arial" font-size="9.00">Startup: 0.550</text>
+<text text-anchor="middle" x="538.72" y="-457.8" font-family="Arial" font-size="9.00">Total: 16.595</text>
 <text text-anchor="middle" x="538.72" y="-447.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="538.72" y="-437.8" font-family="Arial" font-size="9.00">Outer: public.test1 (26144)</text>
 <text text-anchor="middle" x="538.72" y="-427.8" font-family="Arial" font-size="9.00">Inner: public.test2 (26149)</text>
@@ -122,8 +122,8 @@
 <title>plan_all_7</title>
 <path fill="lightblue" stroke="black" d="M779.22,-489C779.22,-489 678.22,-489 678.22,-489 672.22,-489 666.22,-483 666.22,-477 666.22,-477 666.22,-433 666.22,-433 666.22,-427 672.22,-421 678.22,-421 678.22,-421 779.22,-421 779.22,-421 785.22,-421 791.22,-427 791.22,-433 791.22,-433 791.22,-477 791.22,-477 791.22,-483 785.22,-489 779.22,-489"/>
 <text text-anchor="middle" x="728.72" y="-477.8" font-family="Arial" font-size="9.00">T_NestLoop</text>
-<text text-anchor="middle" x="728.72" y="-467.8" font-family="Arial" font-size="9.00">Startup: 0.55</text>
-<text text-anchor="middle" x="728.72" y="-457.8" font-family="Arial" font-size="9.00">Total: 16.60</text>
+<text text-anchor="middle" x="728.72" y="-467.8" font-family="Arial" font-size="9.00">Startup: 0.550</text>
+<text text-anchor="middle" x="728.72" y="-457.8" font-family="Arial" font-size="9.00">Total: 16.600</text>
 <text text-anchor="middle" x="728.72" y="-447.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="728.72" y="-437.8" font-family="Arial" font-size="9.00">Outer: public.test1 (26144)</text>
 <text text-anchor="middle" x="728.72" y="-427.8" font-family="Arial" font-size="9.00">Inner: public.test2 (26149)</text>
@@ -140,8 +140,8 @@
 <title>plan_all_5</title>
 <path fill="lightblue" stroke="black" d="M245.72,-90C245.72,-90 140.72,-90 140.72,-90 134.72,-90 128.72,-84 128.72,-78 128.72,-78 128.72,-44 128.72,-44 128.72,-38 134.72,-32 140.72,-32 140.72,-32 245.72,-32 245.72,-32 251.72,-32 257.72,-38 257.72,-44 257.72,-44 257.72,-78 257.72,-78 257.72,-84 251.72,-90 245.72,-90"/>
 <text text-anchor="middle" x="193.22" y="-78.8" font-family="Arial" font-size="9.00">T_BitmapHeapScan</text>
-<text text-anchor="middle" x="193.22" y="-68.8" font-family="Arial" font-size="9.00">Startup: 4.28</text>
-<text text-anchor="middle" x="193.22" y="-58.8" font-family="Arial" font-size="9.00">Total: 8.30</text>
+<text text-anchor="middle" x="193.22" y="-68.8" font-family="Arial" font-size="9.00">Startup: 4.283</text>
+<text text-anchor="middle" x="193.22" y="-58.8" font-family="Arial" font-size="9.00">Total: 8.295</text>
 <text text-anchor="middle" x="193.22" y="-48.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="193.22" y="-38.8" font-family="Arial" font-size="9.00">Parent: public.test2 (26149)</text>
 </g>
