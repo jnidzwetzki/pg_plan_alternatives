@@ -176,6 +176,41 @@ class PlanVisualizer:
         )
 
     @staticmethod
+    def _join_semantic_signature(event):
+        """Return a semantic signature for join-path deduplication.
+
+        PostgreSQL may emit equivalent join alternatives multiple times with
+        different transient planner pointers.  For visualization purposes we
+        collapse those into one node by keying on stable planner properties.
+        """
+        return (
+            event.get("pid", 0),
+            event.get("event_type", ""),
+            event.get("path_type", ""),
+            round(float(event.get("startup_cost", 0.0)), 6),
+            round(float(event.get("total_cost", 0.0)), 6),
+            int(event.get("rows", 0)),
+            int(event.get("join_type", 0)),
+            event.get("join_type_name", ""),
+            int(event.get("inner_rti", 0)),
+            int(event.get("outer_rti", 0)),
+            int(event.get("inner_rel_oid", 0)),
+            int(event.get("outer_rel_oid", 0)),
+            event.get("outer_path_type_name", ""),
+            event.get("inner_path_type_name", ""),
+        )
+
+    @staticmethod
+    def _is_join_path_event(event):
+        """Return True when the event describes a join path alternative."""
+        return bool(
+            int(event.get("inner_rti", 0))
+            or int(event.get("outer_rti", 0))
+            or int(event.get("inner_rel_oid", 0))
+            or int(event.get("outer_rel_oid", 0))
+        )
+
+    @staticmethod
     def _cluster_sort_key(cluster_key):
         """Sort clusters deterministically for stable graph layout."""
         pid, first, second = cluster_key
@@ -255,17 +290,31 @@ class PlanVisualizer:
         events = sorted(events, key=lambda e: e.get("timestamp", 0))
         deduplicated_events = []
         seen_signatures = set()
+        seen_join_semantic_signatures = set()
         duplicate_count = 0
+        semantic_duplicate_count = 0
         for event in events:
             sig = self._event_signature(event)
             if sig in seen_signatures:
                 duplicate_count += 1
                 continue
+
+            if self._is_join_path_event(event):
+                join_sig = self._join_semantic_signature(event)
+                if join_sig in seen_join_semantic_signatures:
+                    semantic_duplicate_count += 1
+                    continue
+                seen_join_semantic_signatures.add(join_sig)
+
             seen_signatures.add(sig)
             deduplicated_events.append(event)
 
         if duplicate_count:
             self.log(f"  Deduplicated {duplicate_count} repeated ADD_PATH events")
+        if semantic_duplicate_count:
+            self.log(
+                f"  Deduplicated {semantic_duplicate_count} semantically equivalent join ADD_PATH events"
+            )
 
         events = deduplicated_events
 
@@ -604,6 +653,7 @@ class PlanVisualizer:
         parent join event, so we allow a small forward window and prefer the
         closest candidate in time.
         """
+        forward_window_ns = 5_000_000
         candidates = nodes_by_path_ptr.get((event_pid, path_ptr), [])
         if not candidates:
             return None
@@ -627,24 +677,24 @@ class PlanVisualizer:
             next_candidate = (candidate_ts, candidate_node)
             break
 
+        selected_node = candidates[-1][1]
+
         if prev_candidate and next_candidate:
             prev_delta = event_ts - prev_candidate[0]
             next_delta = next_candidate[0] - event_ts
             # 5ms forward window: large enough for emitted sibling events,
             # small enough to avoid unrelated later pointer reuse.
-            if next_delta <= prev_delta and next_delta <= 5_000_000:
-                return next_candidate[1]
-            return prev_candidate[1]
+            if next_delta <= prev_delta and next_delta <= forward_window_ns:
+                selected_node = next_candidate[1]
+            else:
+                selected_node = prev_candidate[1]
+        elif next_candidate:
+            if next_candidate[0] - event_ts <= forward_window_ns:
+                selected_node = next_candidate[1]
+        elif prev_candidate:
+            selected_node = prev_candidate[1]
 
-        if next_candidate:
-            if next_candidate[0] - event_ts <= 5_000_000:
-                return next_candidate[1]
-            return candidates[-1][1]
-
-        if prev_candidate:
-            return prev_candidate[1]
-
-        return candidates[-1][1]
+        return selected_node
 
     def visualize(self):
         """Create visualization"""
