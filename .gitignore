@@ -208,3 +208,6 @@ __marimo__/
 
 # VSCode settings
 .vscode/
+
+# DWARF cache
+.pg_dwarf_cache

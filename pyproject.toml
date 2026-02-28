@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
 	"graphviz",
 	"psycopg2-binary>=2.9",  # required dependency for OID resolution
+	"pyelftools>=0.31",
 ]
 dynamic = ["version"]
 

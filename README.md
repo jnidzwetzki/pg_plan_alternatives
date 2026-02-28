@@ -16,11 +16,12 @@ Key features:
 - **`pg_plan_alternatives`**: eBPF-based tracer that captures all query plans considered during planning
 - **`visualize_plan_graph`**: Creates interactive graph visualizations from trace output
 - Supports PostgreSQL 17 and 18
+- Resolves planner struct offsets automatically from DWARF debug info in the PostgreSQL binary
 - JSON output format for easy processing
 - Shows cost estimates (startup and total) for each alternative
 - Highlights which plan was ultimately chosen
 
-**Note:** This tool relies on [eBPF](https://ebpf.io/) (_Extended Berkeley Packet Filter_) technology and requires root privileges to run.
+**Note:** This tool relies on [eBPF](https://ebpf.io/) (_Extended Berkeley Packet Filter_) technology and requires root privileges to run. The PostgreSQL binary must contain DWARF debug symbols so offsets can be extracted.
 
 ## ⚡ Quickstart
 

@@ -6,6 +6,11 @@
  */
 __DEFINES__
 
+/*
+ * Placeholder for offset defines generated from DWARF.
+ */
+__OFFSETS__
+
 typedef struct PlanEvent {
   u32 pid;
   u64 timestamp;
@@ -135,15 +140,15 @@ static void fill_rel_identity_from_path(void *path, u32 *relid, u32 *rel_oid) {
     return;
   }
 
-  // Path.parent (RelOptInfo*) is at offset 8
+  // Path.parent (RelOptInfo*)
   void *rel = 0;
-  bpf_probe_read_user(&rel, sizeof(rel), path + 8);
+  bpf_probe_read_user(&rel, sizeof(rel), path + OFFSET_PATH_PARENT);
   if (!rel) {
     return;
   }
 
-  // RelOptInfo.relid (RT index) is at offset 112 in PG17
-  bpf_probe_read_user(relid, sizeof(*relid), rel + 112);
+  // RelOptInfo.relid (RT index)
+  bpf_probe_read_user(relid, sizeof(*relid), rel + OFFSET_RELOPTINFO_RELID);
 
   // Resolve real relation OID for base rels via rel pointer map
   // keyed by (pid, relptr). Only apply when RTI matches to avoid
@@ -164,17 +169,18 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
   }
 
   // Path.pathtype
-  bpf_probe_read_user(&event->path_type, sizeof(u32), path + 4);
+  bpf_probe_read_user(&event->path_type, sizeof(u32),
+                      path + OFFSET_PATH_PATHTYPE);
 
   // Path rows and costs
-  event->rows = read_double_bits(path + 40);
-  event->startup_cost = read_double_bits(path + 48);
-  event->total_cost = read_double_bits(path + 56);
+  event->rows = read_double_bits(path + OFFSET_PATH_ROWS);
+  event->startup_cost = read_double_bits(path + OFFSET_PATH_STARTUP_COST);
+  event->total_cost = read_double_bits(path + OFFSET_PATH_TOTAL_COST);
 
   // Parent relation identity from Path.parent (RelOptInfo*)
   fill_rel_identity_from_path(path, &event->parent_relid, &event->relid);
 
-  // JoinPath fields (best effort, PG17)
+  // JoinPath fields
   // Only try to decode join internals for join/upper rel paths
   // (parent_relid==0). This prevents reading random offsets from base scan
   // paths and emitting bogus CREATE_PLAN child nodes.
@@ -183,9 +189,12 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
   void *inner = 0;
 
   if (event->parent_relid == 0) {
-    bpf_probe_read_user(&join_type, sizeof(join_type), path + 72);
-    bpf_probe_read_user(&outer, sizeof(outer), path + 80);
-    bpf_probe_read_user(&inner, sizeof(inner), path + 88);
+    bpf_probe_read_user(&join_type, sizeof(join_type),
+                        path + OFFSET_JOINPATH_JOINTYPE);
+    bpf_probe_read_user(&outer, sizeof(outer),
+                        path + OFFSET_JOINPATH_OUTERJOINPATH);
+    bpf_probe_read_user(&inner, sizeof(inner),
+                        path + OFFSET_JOINPATH_INNERJOINPATH);
 
     if (join_type <= 8 && outer && inner) {
       event->join_type = join_type;
@@ -225,7 +234,8 @@ int bpf_add_path(struct pt_regs *ctx) {
   }
 
   // Prefer parent_rel from function args when available for stability.
-  bpf_probe_read_user(&event.parent_relid, sizeof(u32), parent_rel + 112);
+  bpf_probe_read_user(&event.parent_relid, sizeof(u32),
+                      parent_rel + OFFSET_RELOPTINFO_RELID);
   RelMetaKey rel_ptr_key = {};
   rel_ptr_key.pid = event.pid;
   rel_ptr_key.rel_ptr = (u64)parent_rel;
@@ -255,11 +265,9 @@ int bpf_set_rel_pathlist(struct pt_regs *ctx) {
     return 0;
   }
 
-  // RangeTblEntry layout (PostgreSQL 17, 64-bit):
-  // - rtekind: offset 24
-  // - relid (OID): offset 28
   u32 rtekind = 0;
-  bpf_probe_read_user(&rtekind, sizeof(rtekind), rte + 24);
+  bpf_probe_read_user(&rtekind, sizeof(rtekind),
+                      rte + OFFSET_RANGETBLENTRY_RTEKIND);
 
   // RTE_RELATION = 0
   if (rtekind != 0) {
@@ -268,7 +276,8 @@ int bpf_set_rel_pathlist(struct pt_regs *ctx) {
 
   RelMeta meta = {};
   meta.rti = rti;
-  bpf_probe_read_user(&meta.rel_oid, sizeof(meta.rel_oid), rte + 28);
+  bpf_probe_read_user(&meta.rel_oid, sizeof(meta.rel_oid),
+                      rte + OFFSET_RANGETBLENTRY_RELID);
 
   RelMetaKey rel_ptr_key = {};
   rel_ptr_key.pid = bpf_get_current_pid_tgid();

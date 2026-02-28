@@ -18,7 +18,7 @@ import struct
 from bcc import BPF
 
 from pg_plan_alternatives import __version__
-from pg_plan_alternatives.helper import BPFHelper, NodeTagHelper
+from pg_plan_alternatives.helper import BPFHelper, DwarfOffsetHelper, NodeTagHelper
 
 EXAMPLES = """
 usage examples:
@@ -147,7 +147,9 @@ class PlanAlternativesTracer:
 
     def setup_bpf(self):
         """Setup BPF program"""
-        self.log("Setting up BPF program...")
+        self.log(
+            "Setting up BPF program and determining struct offsets (this might take some time).."
+        )
 
         # Read BPF C code
         bpf_code = BPFHelper.read_bpf_code("pg_plan_alternatives.c")
@@ -156,8 +158,33 @@ class PlanAlternativesTracer:
         defines = BPFHelper.enum_to_defines(TraceEvents, "EVENT_")
         bpf_code = bpf_code.replace("__DEFINES__", defines)
 
+        # Resolve struct offsets from DWARF debug information
+        try:
+            offsets, cache_hit = (
+                DwarfOffsetHelper.extract_offsets_from_binary_with_source(
+                    self.args.exec
+                )
+            )
+        except (FileNotFoundError, RuntimeError, ValueError) as e:
+            print(f"Error extracting DWARF offsets: {e}", file=sys.stderr)
+            print(
+                "Make sure the PostgreSQL binary contains DWARF debug symbols",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        offset_defines = DwarfOffsetHelper.offsets_to_defines(offsets)
+        bpf_code = bpf_code.replace("__OFFSETS__", offset_defines)
+
+        self.log("BPF program code prepared")
+        if cache_hit:
+            self.log("DWARF offsets loaded from cache (.pg_dwarf_cache)")
+        else:
+            self.log("DWARF offsets extracted from binary and cached (.pg_dwarf_cache)")
+
         if self.args.verbose:
-            self.log("BPF program code prepared")
+            for key, value in offsets.items():
+                self.log(f"DWARF offset {key}={value}")
 
         # Initialize BPF
         self.bpf = BPF(text=bpf_code)
@@ -298,8 +325,6 @@ class PlanAlternativesTracer:
 
     def run(self):
         """Main run loop"""
-        self.setup_bpf()
-
         # Open output file if specified
         if self.args.output:
             try:
