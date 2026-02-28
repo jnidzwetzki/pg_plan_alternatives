@@ -20,48 +20,48 @@
 <g id="clust3" class="cluster">
 <title>cluster_rel_0</title>
 <path fill="none" stroke="#a6a6a6" stroke-width="1.2" stroke-dasharray="5,2" d="M28,-24C28,-24 245,-24 245,-24 251,-24 257,-30 257,-36 257,-36 257,-317 257,-317 257,-323 251,-329 245,-329 245,-329 28,-329 28,-329 22,-329 16,-323 16,-317 16,-317 16,-36 16,-36 16,-30 22,-24 28,-24"/>
-<text text-anchor="middle" x="136.5" y="-317" font-family="Arial" font-size="10.00">PID 3917080 • Relation RTI 1 (public.test1 (26144))</text>
+<text text-anchor="middle" x="136.5" y="-317" font-family="Arial" font-size="10.00">PID 1723791 • Relation RTI 1 (public.test1 (26144))</text>
 </g>
-<!-- plan_all_0 -->
+<!-- plan_1723791_0 -->
 <g id="node1" class="node">
-<title>plan_all_0</title>
+<title>plan_1723791_0</title>
 <path fill="lightblue" stroke="black" d="M189,-302C189,-302 84,-302 84,-302 78,-302 72,-296 72,-290 72,-290 72,-256 72,-256 72,-250 78,-244 84,-244 84,-244 189,-244 189,-244 195,-244 201,-250 201,-256 201,-256 201,-290 201,-290 201,-296 195,-302 189,-302"/>
 <text text-anchor="middle" x="136.5" y="-290.8" font-family="Arial" font-size="9.00">T_SeqScan</text>
-<text text-anchor="middle" x="136.5" y="-280.8" font-family="Arial" font-size="9.00">Startup: 0.00</text>
-<text text-anchor="middle" x="136.5" y="-270.8" font-family="Arial" font-size="9.00">Total: 17.50</text>
+<text text-anchor="middle" x="136.5" y="-280.8" font-family="Arial" font-size="9.00">Startup: 0.000</text>
+<text text-anchor="middle" x="136.5" y="-270.8" font-family="Arial" font-size="9.00">Total: 17.500</text>
 <text text-anchor="middle" x="136.5" y="-260.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="136.5" y="-250.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
-<!-- plan_all_1 -->
+<!-- plan_1723791_1 -->
 <g id="node2" class="node">
-<title>plan_all_1</title>
+<title>plan_1723791_1</title>
 <path fill="lightgreen" stroke="black" stroke-width="3" d="M189,-201C189,-201 84,-201 84,-201 78,-201 72,-195 72,-189 72,-189 72,-145 72,-145 72,-139 78,-133 84,-133 84,-133 189,-133 189,-133 195,-133 201,-139 201,-145 201,-145 201,-189 201,-189 201,-195 195,-201 189,-201"/>
 <text text-anchor="middle" x="136.5" y="-189.8" font-family="Arial" font-size="9.00">T_IndexOnlyScan</text>
 <text text-anchor="middle" x="136.5" y="-179.8" font-family="Arial" font-size="9.00">[CHOSEN]</text>
-<text text-anchor="middle" x="136.5" y="-169.8" font-family="Arial" font-size="9.00">Startup: 0.28</text>
-<text text-anchor="middle" x="136.5" y="-159.8" font-family="Arial" font-size="9.00">Total: 8.29</text>
+<text text-anchor="middle" x="136.5" y="-169.8" font-family="Arial" font-size="9.00">Startup: 0.275</text>
+<text text-anchor="middle" x="136.5" y="-159.8" font-family="Arial" font-size="9.00">Total: 8.293</text>
 <text text-anchor="middle" x="136.5" y="-149.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="136.5" y="-139.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
-<!-- plan_all_0&#45;&gt;plan_all_1 -->
+<!-- plan_1723791_0&#45;&gt;plan_1723791_1 -->
 <g id="edge1" class="edge">
-<title>plan_all_0&#45;&gt;plan_all_1</title>
+<title>plan_1723791_0&#45;&gt;plan_1723791_1</title>
 <path fill="none" stroke="#7f7f7f" stroke-dasharray="5,2" d="M136.5,-243.9C136.5,-229.72 136.5,-215.54 136.5,-201.37"/>
 <text text-anchor="middle" x="131.5" y="-215.43" font-family="Arial" font-size="9.00">alt</text>
 </g>
-<!-- plan_all_2 -->
+<!-- plan_1723791_2 -->
 <g id="node3" class="node">
-<title>plan_all_2</title>
+<title>plan_1723791_2</title>
 <path fill="lightblue" stroke="black" d="M189,-90C189,-90 84,-90 84,-90 78,-90 72,-84 72,-78 72,-78 72,-44 72,-44 72,-38 78,-32 84,-32 84,-32 189,-32 189,-32 195,-32 201,-38 201,-44 201,-44 201,-78 201,-78 201,-84 195,-90 189,-90"/>
 <text text-anchor="middle" x="136.5" y="-78.8" font-family="Arial" font-size="9.00">T_BitmapHeapScan</text>
-<text text-anchor="middle" x="136.5" y="-68.8" font-family="Arial" font-size="9.00">Startup: 4.28</text>
-<text text-anchor="middle" x="136.5" y="-58.8" font-family="Arial" font-size="9.00">Total: 8.30</text>
+<text text-anchor="middle" x="136.5" y="-68.8" font-family="Arial" font-size="9.00">Startup: 4.283</text>
+<text text-anchor="middle" x="136.5" y="-58.8" font-family="Arial" font-size="9.00">Total: 8.295</text>
 <text text-anchor="middle" x="136.5" y="-48.8" font-family="Arial" font-size="9.00">Rows: 1</text>
 <text text-anchor="middle" x="136.5" y="-38.8" font-family="Arial" font-size="9.00">Parent: public.test1 (26144)</text>
 </g>
-<!-- plan_all_1&#45;&gt;plan_all_2 -->
+<!-- plan_1723791_1&#45;&gt;plan_1723791_2 -->
 <g id="edge2" class="edge">
-<title>plan_all_1&#45;&gt;plan_all_2</title>
+<title>plan_1723791_1&#45;&gt;plan_1723791_2</title>
 <path fill="none" stroke="#7f7f7f" stroke-dasharray="5,2" d="M136.5,-132.89C136.5,-118.73 136.5,-104.56 136.5,-90.4"/>
 <text text-anchor="middle" x="131.5" y="-104.44" font-family="Arial" font-size="9.00">alt</text>
 </g>
@@ -79,15 +79,15 @@
 <!-- legend -->
 <g id="node5" class="node">
 <title>legend</title>
-<polygon fill="white" stroke="black" points="235.5,-512 31.5,-512 31.5,-444 241.5,-444 241.5,-506 235.5,-512"/>
-<polyline fill="none" stroke="black" points="235.5,-512 235.5,-506 "/>
-<polyline fill="none" stroke="black" points="241.5,-506 235.5,-506 "/>
+<polygon fill="white" stroke="black" points="215,-512 52,-512 52,-444 221,-444 221,-506 215,-512"/>
+<polyline fill="none" stroke="black" points="215,-512 215,-506 "/>
+<polyline fill="none" stroke="black" points="221,-506 215,-506 "/>
 <text text-anchor="middle" x="136.5" y="-500.8" font-family="Arial" font-size="9.00">Legend</text>
 <text text-anchor="middle" x="136.5" y="-490.8" font-family="Arial" font-size="9.00">Blue edge: outer input</text>
 <text text-anchor="middle" x="136.5" y="-480.8" font-family="Arial" font-size="9.00">Orange edge: inner input</text>
 <text text-anchor="middle" x="136.5" y="-470.8" font-family="Arial" font-size="9.00">Dashed cluster: relation/join group</text>
 <text text-anchor="middle" x="136.5" y="-460.8" font-family="Arial" font-size="9.00">Green node: selected plan</text>
-<text text-anchor="middle" x="136.5" y="-450.8" font-family="Arial" font-size="9.00">Dashed edge (alt): next alternative for same RTI</text>
+<text text-anchor="middle" x="136.5" y="-450.8" font-family="Arial" font-size="9.00">Black edge: relation path progression</text>
 </g>
 </g>
 </svg>

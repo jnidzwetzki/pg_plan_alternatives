@@ -211,3 +211,4 @@ __marimo__/
 
 # DWARF cache
 .pg_dwarf_cache
+.gdb_history
