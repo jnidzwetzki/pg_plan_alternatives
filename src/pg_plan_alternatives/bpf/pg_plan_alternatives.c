@@ -16,6 +16,14 @@ typedef struct PlanEvent {
   u64 timestamp;
   u32 event_type;
 
+  // Pointer identities (used for lineage reconstruction in user-space)
+  u64 path_ptr;
+  u64 parent_rel_ptr;
+  u64 outer_path_ptr;
+  u64 inner_path_ptr;
+  u32 outer_path_type;
+  u32 inner_path_type;
+
   // Path information
   u32 path_type;     // NodeTag type
   u64 startup_cost;  // Cost_startup (converted to fixed-point)
@@ -37,6 +45,9 @@ typedef struct PlanEvent {
 } PlanEvent;
 
 BPF_PERF_OUTPUT(planevents);
+
+// Per-CPU event storage to avoid exceeding the 512-byte BPF stack limit.
+BPF_PERCPU_ARRAY(plan_event_scratch, PlanEvent, 1);
 
 typedef struct RelMeta {
   u32 rti;
@@ -62,6 +73,11 @@ static __always_inline int create_plan_stack_set(u32 idx, void *path_ptr) {
 
   *slot = (u64)path_ptr;
   return 1;
+}
+
+static __always_inline PlanEvent *get_plan_event_scratch(void) {
+  u32 idx = 0;
+  return plan_event_scratch.lookup(&idx);
 }
 
 static __always_inline void *create_plan_stack_get(u32 idx) {
@@ -168,6 +184,13 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
     return 0;
   }
 
+  event->path_ptr = (u64)path;
+
+  void *parent_rel = 0;
+  bpf_probe_read_user(&parent_rel, sizeof(parent_rel),
+                      path + OFFSET_PATH_PARENT);
+  event->parent_rel_ptr = (u64)parent_rel;
+
   // Path.pathtype
   bpf_probe_read_user(&event->path_type, sizeof(u32),
                       path + OFFSET_PATH_PATHTYPE);
@@ -196,12 +219,23 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
     bpf_probe_read_user(&inner, sizeof(inner),
                         path + OFFSET_JOINPATH_INNERJOINPATH);
 
-    if (join_type <= 8 && outer && inner) {
+    event->outer_path_ptr = (u64)outer;
+    event->inner_path_ptr = (u64)inner;
+
+    if (join_type <= 8) {
       event->join_type = join_type;
-      fill_rel_identity_from_path(outer, &event->outer_relid,
-                                  &event->outer_rel_oid);
-      fill_rel_identity_from_path(inner, &event->inner_relid,
-                                  &event->inner_rel_oid);
+      if (outer) {
+        bpf_probe_read_user(&event->outer_path_type, sizeof(u32),
+                            outer + OFFSET_PATH_PATHTYPE);
+        fill_rel_identity_from_path(outer, &event->outer_relid,
+                                    &event->outer_rel_oid);
+      }
+      if (inner) {
+        bpf_probe_read_user(&event->inner_path_type, sizeof(u32),
+                            inner + OFFSET_PATH_PATHTYPE);
+        fill_rel_identity_from_path(inner, &event->inner_relid,
+                                    &event->inner_rel_oid);
+      }
     }
   }
 
@@ -216,8 +250,14 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
 }
 
 int bpf_add_path(struct pt_regs *ctx) {
-  PlanEvent event = {.event_type = EVENT_ADD_PATH};
-  fill_basic_data(&event);
+  PlanEvent *event = get_plan_event_scratch();
+  if (!event) {
+    return 0;
+  }
+
+  __builtin_memset(event, 0, sizeof(*event));
+  event->event_type = EVENT_ADD_PATH;
+  fill_basic_data(event);
 
   // Get function parameters
   void *parent_rel = (void *)PT_REGS_PARM1(ctx);
@@ -229,23 +269,46 @@ int bpf_add_path(struct pt_regs *ctx) {
 
   void *outer_path = 0;
   void *inner_path = 0;
-  if (!fill_plan_event_from_path(new_path, &event, &outer_path, &inner_path)) {
+  if (!fill_plan_event_from_path(new_path, event, &outer_path, &inner_path)) {
     return 0;
   }
 
+  event->parent_rel_ptr = (u64)parent_rel;
+
   // Prefer parent_rel from function args when available for stability.
-  bpf_probe_read_user(&event.parent_relid, sizeof(u32),
+  bpf_probe_read_user(&event->parent_relid, sizeof(u32),
                       parent_rel + OFFSET_RELOPTINFO_RELID);
   RelMetaKey rel_ptr_key = {};
-  rel_ptr_key.pid = event.pid;
+  rel_ptr_key.pid = event->pid;
   rel_ptr_key.rel_ptr = (u64)parent_rel;
   RelMeta *meta = relmeta_by_relptr.lookup(&rel_ptr_key);
-  if (meta && meta->rel_oid && event.parent_relid &&
-      meta->rti == event.parent_relid) {
-    event.relid = meta->rel_oid;
+  if (meta && meta->rel_oid && event->parent_relid &&
+      meta->rti == event->parent_relid) {
+    event->relid = meta->rel_oid;
   }
 
-  planevents.perf_submit(ctx, &event, sizeof(PlanEvent));
+  planevents.perf_submit(ctx, event, sizeof(PlanEvent));
+
+  // Also emit immediate child paths so non-added wrapper nodes (e.g.
+  // MaterialPath under JoinPath.innerjoinpath) are visible in ADD_PATH traces.
+  if (outer_path) {
+    __builtin_memset(event, 0, sizeof(*event));
+    event->event_type = EVENT_ADD_PATH;
+    fill_basic_data(event);
+    if (fill_plan_event_from_path(outer_path, event, 0, 0)) {
+      planevents.perf_submit(ctx, event, sizeof(PlanEvent));
+    }
+  }
+
+  if (inner_path) {
+    __builtin_memset(event, 0, sizeof(*event));
+    event->event_type = EVENT_ADD_PATH;
+    fill_basic_data(event);
+    if (fill_plan_event_from_path(inner_path, event, 0, 0)) {
+      planevents.perf_submit(ctx, event, sizeof(PlanEvent));
+    }
+  }
+
   return 0;
 }
 
@@ -314,17 +377,23 @@ int bpf_create_plan(struct pt_regs *ctx) {
       continue;
     }
 
-    PlanEvent event = {.event_type = EVENT_CREATE_PLAN};
-    fill_basic_data(&event);
+    PlanEvent *event = get_plan_event_scratch();
+    if (!event) {
+      continue;
+    }
+
+    __builtin_memset(event, 0, sizeof(*event));
+    event->event_type = EVENT_CREATE_PLAN;
+    fill_basic_data(event);
 
     void *outer_path = 0;
     void *inner_path = 0;
-    if (!fill_plan_event_from_path(current_path, &event, &outer_path,
+    if (!fill_plan_event_from_path(current_path, event, &outer_path,
                                    &inner_path)) {
       continue;
     }
 
-    planevents.perf_submit(ctx, &event, sizeof(PlanEvent));
+    planevents.perf_submit(ctx, event, sizeof(PlanEvent));
 
     if (outer_path && sp < MAX_CREATE_PLAN_NODES) {
       create_plan_stack_set((u32)sp, outer_path);

@@ -370,11 +370,51 @@ Key instrumented functions:
 - **`add_path()`**: Called when a new query plan alternative is considered
 - **`create_plan()`**: Called when the chosen plan is converted to an execution plan
 
+### Path Detection Algorithm
+
+The main challenge of this tool is reconstructing path relationships (for example, determining which paths are children of a join path) from `add_path()` and `create_plan()` events.
+
+The implementation uses pointer-based tracking plus timestamp/type disambiguation (since pointers can be reused by PostgreSQL across different paths):
+
+1. **Capture path identity in BPF (`add_path`)**
+      - For each event, runtime identities are emitted:
+        - `path_ptr`: pointer of the current `Path`
+        - `parent_rel_ptr`: pointer of `Path.parent` (`RelOptInfo*`)
+        - `outer_path_ptr` / `inner_path_ptr`: child path pointers for join paths
+        - `outer_path_type` / `inner_path_type`: expected child `pathtype` values for disambiguation
+      - Relation metadata is also emitted (`parent_rti`, relation OIDs, join type, inner/outer RTIs).
+
+2. **Emit immediate join children**
+      - After emitting the main join `ADD_PATH` event, the tracer emits immediate child snapshots (outer/inner) as additional `ADD_PATH` events.
+      - This ensures wrapper nodes such as `T_Material` appear in the trace, even when PostgreSQL does not emit a standalone `add_path()` call for that wrapper at that moment.
+
+3. **Record the selected plan (`create_plan`)**
+      - `CREATE_PLAN` events carry the same pointer fields.
+      - A bounded DFS in BPF walks selected child paths.
+
+4. **Build user-space candidate sets**
+      - The visualizer indexes candidates by `(pid, path_ptr)` and stores `(timestamp, node_id, path_type)`.
+      - Event deduplication includes pointer/type information to avoid collapsing distinct alternatives that have similar costs.
+
+5. **Resolve join edges with pointer + type + time**
+      - Join edges are resolved from `outer_path_ptr` / `inner_path_ptr`.
+      - If a pointer maps to multiple candidates (pointer reuse), resolution is:
+        1) filter by expected child type (`outer_path_type_name` / `inner_path_type_name`) when available,
+        2) choose the closest timestamp candidate,
+        3) allow a small forward window for child snapshots emitted just after the parent join event.
+
+6. **Render base access paths separately from wrappers**
+      - Base relation access paths (scan variants) are grouped inside RTI relation clusters.
+      - Non-base wrappers (for example `T_Material`) are rendered outside those relation clusters.
+      - Edge styling:
+        - dashed gray `alt` edges for scan-to-scan alternatives,
+        - plain black progression edges when a transition involves a non-base wrapper,
+        - blue/orange edges for join outer/inner inputs.
+
 ## ⚠️ Known Limitations
 
 - ⚠️ Early prototype implementation without extensive testing.
 - Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below).
-- Materialize nodes are not currently supported.
 - Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented).
 
 ## 📋 Requirements

@@ -269,6 +269,18 @@ class PlanAlternativesTracer:
             "pid": pid,
             "event_type": TraceEvents(event_type).name,
             "path_type": path_type_str,
+            "path_ptr": int(event.path_ptr),
+            "parent_rel_ptr": int(event.parent_rel_ptr),
+            "outer_path_ptr": int(event.outer_path_ptr),
+            "inner_path_ptr": int(event.inner_path_ptr),
+            "outer_path_type": int(event.outer_path_type),
+            "inner_path_type": int(event.inner_path_type),
+            "outer_path_type_name": NodeTagHelper.name_from_value(
+                event.outer_path_type
+            ),
+            "inner_path_type_name": NodeTagHelper.name_from_value(
+                event.inner_path_type
+            ),
             "startup_cost": startup_cost,
             "total_cost": total_cost,
             "rows": rows,
