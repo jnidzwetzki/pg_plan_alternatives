@@ -422,7 +422,7 @@ The implementation uses pointer-based tracking plus timestamp/type disambiguatio
 - Linux with eBPF support (kernel 4.9+)
 - Python 3.10+
 - Root privileges (required for eBPF)
-- PostgreSQL 14, 15, 16, 17, or 18 with debug symbols
+- PostgreSQL 17, or 18 with debug symbols
 - BCC (BPF Compiler Collection)
 - graphviz (for visualization)
 - psycopg2 (required for OID resolution)
