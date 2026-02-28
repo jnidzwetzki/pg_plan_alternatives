@@ -5,3 +5,4 @@ black>=22.0.0
 mypy>=0.990
 graphviz>=0.20
 psycopg2-binary>=2.9
+pyelftools>=0.31
