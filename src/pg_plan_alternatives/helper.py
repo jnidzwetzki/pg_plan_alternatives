@@ -70,6 +70,8 @@ class DwarfOffsetHelper:
         "OFFSET_PATH_ROWS": ("Path", "rows"),
         "OFFSET_PATH_STARTUP_COST": ("Path", "startup_cost"),
         "OFFSET_PATH_TOTAL_COST": ("Path", "total_cost"),
+        "OFFSET_PROJECTIONPATH_SUBPATH": ("ProjectionPath", "subpath"),
+        "OFFSET_SORTPATH_SUBPATH": ("SortPath", "subpath"),
         "OFFSET_RELOPTINFO_RELID": ("RelOptInfo", "relid"),
         "OFFSET_JOINPATH_JOINTYPE": ("JoinPath", "jointype"),
         "OFFSET_JOINPATH_OUTERJOINPATH": ("JoinPath", "outerjoinpath"),
@@ -97,9 +99,18 @@ class DwarfOffsetHelper:
         cache_key = cls._make_cache_key(binary_path)
         cache_data = cls._load_cache()
 
+        # Check if all required offsets are present in the cache and return them if so
+        # otherwise, we'll need to parse the binary and update the cache.
         cached_offsets = cache_data.get(cache_key)
         if isinstance(cached_offsets, dict):
-            return ({name: int(value) for name, value in cached_offsets.items()}, True)
+            normalized = {name: int(value) for name, value in cached_offsets.items()}
+            missing_from_cache = [
+                macro_name
+                for macro_name in cls.REQUIRED_FIELDS
+                if macro_name not in normalized
+            ]
+            if not missing_from_cache:
+                return (normalized, True)
 
         with open(binary_path, "rb") as binary_fh:
             elf_file = ELFFile(binary_fh)

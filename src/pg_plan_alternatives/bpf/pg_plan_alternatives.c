@@ -61,7 +61,10 @@ typedef struct RelMetaKey {
 
 BPF_HASH(relmeta_by_relptr, RelMetaKey, RelMeta, 8192);
 
-#define MAX_CREATE_PLAN_NODES 16
+// Reduce max depth of create_plan traversal to avoid unbounded loops on complex
+// plans.
+#define MAX_CREATE_PLAN_NODES 12
+
 // Per-CPU stack storage for CREATE_PLAN path traversal (stores Path* as u64).
 BPF_PERCPU_ARRAY(create_plan_stack, u64, MAX_CREATE_PLAN_NODES);
 
@@ -203,15 +206,39 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
   // Parent relation identity from Path.parent (RelOptInfo*)
   fill_rel_identity_from_path(path, &event->parent_relid, &event->relid);
 
-  // JoinPath fields
-  // Only try to decode join internals for join/upper rel paths
-  // (parent_relid==0). This prevents reading random offsets from base scan
-  // paths and emitting bogus CREATE_PLAN child nodes.
+  // Child-path fields
+  // Decode according to the concrete path node type to avoid interpreting
+  // unrelated layouts as JoinPath.
   u32 join_type = 0;
   void *outer = 0;
   void *inner = 0;
 
-  if (event->parent_relid == 0) {
+  // Unary wrappers: expose subpath through outer_path_ptr for lineage.
+  if (event->path_type == NODETAG_T_Result) {
+    bpf_probe_read_user(&outer, sizeof(outer),
+                        path + OFFSET_PROJECTIONPATH_SUBPATH);
+    event->outer_path_ptr = (u64)outer;
+    if (outer) {
+      bpf_probe_read_user(&event->outer_path_type, sizeof(u32),
+                          outer + OFFSET_PATH_PATHTYPE);
+      fill_rel_identity_from_path(outer, &event->outer_relid,
+                                  &event->outer_rel_oid);
+    }
+  } else if (event->path_type == NODETAG_T_Sort) {
+    bpf_probe_read_user(&outer, sizeof(outer), path + OFFSET_SORTPATH_SUBPATH);
+    event->outer_path_ptr = (u64)outer;
+    if (outer) {
+      bpf_probe_read_user(&event->outer_path_type, sizeof(u32),
+                          outer + OFFSET_PATH_PATHTYPE);
+      fill_rel_identity_from_path(outer, &event->outer_relid,
+                                  &event->outer_rel_oid);
+    }
+  }
+
+  // JoinPath-style binary nodes.
+  if (event->parent_relid == 0 && (event->path_type == NODETAG_T_NestLoop ||
+                                   event->path_type == NODETAG_T_MergeJoin ||
+                                   event->path_type == NODETAG_T_HashJoin)) {
     bpf_probe_read_user(&join_type, sizeof(join_type),
                         path + OFFSET_JOINPATH_JOINTYPE);
     bpf_probe_read_user(&outer, sizeof(outer),
