@@ -392,7 +392,7 @@
 <polyline fill="none" stroke="black" points="274.65,-1623 274.65,-1617 "/>
 <polyline fill="none" stroke="black" points="280.65,-1617 274.65,-1617 "/>
 <text text-anchor="middle" x="196.15" y="-1611.8" font-family="Arial" font-size="9.00">Legend</text>
-<text text-anchor="middle" x="196.15" y="-1601.8" font-family="Arial" font-size="9.00">Blue edge: outer input</text>
+<text text-anchor="middle" x="196.15" y="-1601.8" font-family="Arial" font-size="9.00">Blue edge: outer/subpath input</text>
 <text text-anchor="middle" x="196.15" y="-1591.8" font-family="Arial" font-size="9.00">Orange edge: inner input</text>
 <text text-anchor="middle" x="196.15" y="-1581.8" font-family="Arial" font-size="9.00">Dashed cluster: relation/join group</text>
 <text text-anchor="middle" x="196.15" y="-1571.8" font-family="Arial" font-size="9.00">Green node: selected plan</text>

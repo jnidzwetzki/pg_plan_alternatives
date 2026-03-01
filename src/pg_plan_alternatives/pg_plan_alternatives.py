@@ -156,6 +156,23 @@ class PlanAlternativesTracer:
 
         # Replace __DEFINES__ with enum definitions
         defines = BPFHelper.enum_to_defines(TraceEvents, "EVENT_")
+
+        # Inject selected NodeTag values used by BPF-side path decoding.
+        # Missing tags are assigned a sentinel that cannot match real NodeTags.
+        nodetag_names = [
+            "T_NestLoop",
+            "T_MergeJoin",
+            "T_HashJoin",
+            "T_Result",
+            "T_Sort",
+        ]
+        for nodetag_name in nodetag_names:
+            try:
+                nodetag_value = NodeTagHelper.value_from_name(nodetag_name)
+            except ValueError:
+                nodetag_value = 0xFFFFFFFF
+            defines += f"#define NODETAG_{nodetag_name} {nodetag_value}\n"
+
         bpf_code = bpf_code.replace("__DEFINES__", defines)
 
         # Resolve struct offsets from DWARF debug information
@@ -186,8 +203,8 @@ class PlanAlternativesTracer:
             for key, value in offsets.items():
                 self.log(f"DWARF offset {key}={value}")
 
-        # Initialize BPF
-        self.bpf = BPF(text=bpf_code)
+        # Initialize BPF and compile the program optimized for size
+        self.bpf = BPF(text=bpf_code, cflags=["-O2", "-Os"])
 
         # Attach uprobes
         self.log(f"Attaching to binary: {self.args.exec}")

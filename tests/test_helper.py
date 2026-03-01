@@ -95,6 +95,8 @@ class TestDwarfOffsetHelper(unittest.TestCase):
                 "startup_cost": 48,
                 "total_cost": 56,
             },
+            "ProjectionPath": {"subpath": 64},
+            "SortPath": {"subpath": 64},
             "RelOptInfo": {"relid": 112},
             "JoinPath": {"jointype": 72, "outerjoinpath": 80, "innerjoinpath": 88},
             "RangeTblEntry": {"rtekind": 24, "relid": 28},

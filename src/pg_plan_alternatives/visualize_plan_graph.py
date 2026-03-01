@@ -202,13 +202,18 @@ class PlanVisualizer:
 
     @staticmethod
     def _is_join_path_event(event):
-        """Return True when the event describes a join path alternative."""
-        return bool(
-            int(event.get("inner_rti", 0))
-            or int(event.get("outer_rti", 0))
-            or int(event.get("inner_rel_oid", 0))
+        """Return True when the event describes a binary join alternative."""
+        has_outer = bool(
+            int(event.get("outer_rti", 0))
             or int(event.get("outer_rel_oid", 0))
+            or int(event.get("outer_path_ptr", 0))
         )
+        has_inner = bool(
+            int(event.get("inner_rti", 0))
+            or int(event.get("inner_rel_oid", 0))
+            or int(event.get("inner_path_ptr", 0))
+        )
+        return has_outer and has_inner
 
     @staticmethod
     def _cluster_sort_key(cluster_key):
@@ -393,8 +398,10 @@ class PlanVisualizer:
                 nodes_by_relation[rel_key].append(node_id)
                 if self._is_base_relation_access(path_type):
                     relation_cluster_key = (event_pid, parent_rti, parent_rel_oid)
-                    relation_cluster_nodes[relation_cluster_key].append((node_id, event))
-            elif inner_rti or outer_rti:
+                    relation_cluster_nodes[relation_cluster_key].append(
+                        (node_id, event)
+                    )
+            elif self._is_join_path_event(event):
                 join_cluster_key = (
                     event_pid,
                     join_type_name,
@@ -494,7 +501,9 @@ class PlanVisualizer:
             for i in range(len(rel_nodes) - 1):
                 src_node = rel_nodes[i]
                 dst_node = rel_nodes[i + 1]
-                if node_is_base_access.get(src_node) and node_is_base_access.get(dst_node):
+                if node_is_base_access.get(src_node) and node_is_base_access.get(
+                    dst_node
+                ):
                     dot.edge(
                         src_node,
                         dst_node,
@@ -563,6 +572,7 @@ class PlanVisualizer:
 
         # Build explicit parent-child lineage from path pointers.
         for node_id, event in event_records:
+            path_type = event.get("path_type", "Unknown")
             event_pid = event.get("pid", pid)
             outer_path_ptr = int(event.get("outer_path_ptr", 0))
             inner_path_ptr = int(event.get("inner_path_ptr", 0))
@@ -577,11 +587,12 @@ class PlanVisualizer:
                     event.get("outer_path_type_name"),
                 )
                 if outer_node and outer_node != node_id:
+                    outer_edge_label = "subpath" if path_type == "T_Sort" else "outer"
                     dot.edge(
                         outer_node,
                         node_id,
                         color="steelblue3",
-                        xlabel="outer",
+                        xlabel=outer_edge_label,
                         minlen="2",
                     )
 
@@ -629,7 +640,7 @@ class PlanVisualizer:
 
             legend_label = (
                 "Legend\\n"
-                "Blue edge: outer input\\n"
+                "Blue edge: outer/subpath input\\n"
                 "Orange edge: inner input\\n"
                 "Dashed cluster: relation/join group\\n"
                 "Green node: selected plan\\n"

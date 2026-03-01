@@ -166,7 +166,7 @@ $ visualize_plan_graph -i examples/select.json -o examples/select.svg --db-url p
 
 ![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select.svg)
 
-### SELECT with a simple WHERE clause:
+### SELECT with a simple WHERE clause
 
 In the next example, we will run a `SELECT` query with a `WHERE` clause that filters for a specific ID. 
 
@@ -207,6 +207,45 @@ jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 WHERE id = 5;
 The visualization of the alternatives for this query looks like this:
 
 ![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select_where.svg)
+
+## SELECT with ORDER BY
+
+When an `ORDER BY` clause is added to the query, the optimizer considers additional plans that involve sorting the results. For example:
+
+```sql
+SELECT * FROM test1 ORDER BY id;
+```
+
+The tracer output shows the following alternatives being considered by the optimizer:
+
+```
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_SeqScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Result
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Sort
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=CREATE_PLAN, PathType=T_IndexOnlyScan
+```
+
+This indicates that regular sequential scans, index only scans, and sorting plans are all considered by the optimizer. 
+
+```
+EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 ORDER BY id;
+                                                             QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------
+ Index Only Scan using test1_pkey on public.test1  (cost=0.28..43.27 rows=1000 width=4) (actual time=0.192..5.385 rows=1000 loops=1)
+   Output: id
+   Heap Fetches: 1000
+ Planning Time: 1.167 ms
+ Execution Time: 5.579 ms
+(5 rows)
+```
+
+![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select_order.svg)
+
+In the final plan, the optimizer has chosen an `Index Only Scan` and delivered the tuples already in the correct order with the estimated cost of `43.27`. The visualization of the alternatives shows that using a sequential scan with a sort would have a much higher estimated cost of `67.329`.
+
 
 ### JOIN
 
