@@ -23,6 +23,9 @@ Key features:
 
 **Note:** This tool relies on [eBPF](https://ebpf.io/) (_Extended Berkeley Packet Filter_) technology and requires root privileges to run. The PostgreSQL binary must contain DWARF debug symbols so offsets can be extracted.
 
+> [!IMPORTANT]
+> Early prototype implementation not intended for production use (see limitations below)
+
 ## ⚡ Quickstart
 
 1. Install the tool:
@@ -498,8 +501,6 @@ The implementation uses pointer-based tracking plus timestamp/type disambiguatio
         - blue/orange edges for join outer/inner inputs.
 
 ## ⚠️ Known Limitations
-
-- ⚠️ Early prototype implementation without extensive testing.
 - Only some node types are currently supported.
 - Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below).
 - Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented).
