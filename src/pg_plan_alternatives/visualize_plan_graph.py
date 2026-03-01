@@ -158,6 +158,7 @@ class PlanVisualizer:
             event.get("pid", 0),
             event.get("event_type", ""),
             int(event.get("path_ptr", 0)),
+            event.get("path_node_type_name", ""),
             int(event.get("parent_rel_ptr", 0)),
             int(event.get("outer_path_ptr", 0)),
             int(event.get("inner_path_ptr", 0)),
@@ -187,6 +188,7 @@ class PlanVisualizer:
         return (
             event.get("pid", 0),
             event.get("event_type", ""),
+            event.get("path_node_type_name", ""),
             event.get("path_type", ""),
             round(float(event.get("startup_cost", 0.0)), 6),
             round(float(event.get("total_cost", 0.0)), 6),
@@ -248,6 +250,7 @@ class PlanVisualizer:
         """Return a semantic key for mapping CREATE_PLAN nodes to ADD_PATH peers."""
         return (
             event.get("pid", 0),
+            event.get("path_node_type_name", ""),
             event.get("path_type", ""),
             round(float(event.get("startup_cost", 0.0)), 6),
             round(float(event.get("total_cost", 0.0)), 6),
@@ -479,6 +482,7 @@ class PlanVisualizer:
                 continue
 
             path_type = event.get("path_type", "Unknown")
+            path_node_type_name = event.get("path_node_type_name", "")
             startup_cost = event.get("startup_cost", 0)
             total_cost = event.get("total_cost", 0)
             rows = event.get("rows", 0)
@@ -488,7 +492,7 @@ class PlanVisualizer:
             parent_rti = event.get("parent_rti", 0)
             inner_rti = event.get("inner_rti", 0)
             outer_rti = event.get("outer_rti", 0)
-            join_type_name = event.get("join_type_name", "JOIN_INNER")
+            join_type_name = event.get("join_type_name", "N/A")
             event_pid = event.get("pid", pid)
 
             # Defensive filter: skip isolated base-path records that have no
@@ -520,8 +524,11 @@ class PlanVisualizer:
             if oid_lines:
                 oid_text = "\\n" + "\\n".join(oid_lines)
 
+            path_identity_line = f"Type: {path_node_type_name}\n"
+
             label = (
                 f"{path_type}\n"
+                f"{path_identity_line}"
                 f"Startup: {self._format_cost(startup_cost)}\n"
                 f"Total: {self._format_cost(total_cost)}\n"
                 f"Rows: {rows}"
@@ -770,6 +777,7 @@ class PlanVisualizer:
         for chosen_node_id in chosen_node_ids:
             event = node_to_event[chosen_node_id]
             path_type = event.get("path_type", "Unknown")
+            path_node_type_name = event.get("path_node_type_name", "")
             startup_cost = event.get("startup_cost", 0)
             total_cost = event.get("total_cost", 0)
             rows = event.get("rows", 0)
@@ -791,6 +799,7 @@ class PlanVisualizer:
 
             chosen_label = (
                 f"{path_type}\n[CHOSEN]\n"
+                f"Type: {path_node_type_name}\n"
                 f"Startup: {self._format_cost(startup_cost)}\n"
                 f"Total: {self._format_cost(total_cost)}\n"
                 f"Rows: {rows}"

@@ -121,6 +121,8 @@ parser.add_argument(
 class PlanAlternativesTracer:
     """Main tracer class"""
 
+    JOIN_PATH_TYPES = {"T_NestLoop", "T_MergeJoin", "T_HashJoin"}
+
     def __init__(self, args):
         self.args = args
         self.bpf = None
@@ -267,12 +269,16 @@ class PlanAlternativesTracer:
         except (struct.error, OverflowError, ValueError, TypeError):
             total_cost = float(event.total_cost)
 
+        path_node_type_str = NodeTagHelper.name_from_value(event.path_node_type)
         path_type_str = NodeTagHelper.name_from_value(event.path_type)
 
-        try:
-            join_type_str = JoinType(event.join_type).name
-        except ValueError:
-            join_type_str = f"Unknown({event.join_type})"
+        if path_type_str in self.JOIN_PATH_TYPES:
+            try:
+                join_type_str = JoinType(event.join_type).name
+            except ValueError:
+                join_type_str = f"Unknown({event.join_type})"
+        else:
+            join_type_str = "N/A"
 
         # Decode rows estimate (was sent as raw double bits)
         try:
@@ -286,6 +292,8 @@ class PlanAlternativesTracer:
             "timestamp": timestamp,
             "pid": pid,
             "event_type": TraceEvents(event_type).name,
+            "path_node_type": int(event.path_node_type),
+            "path_node_type_name": path_node_type_str,
             "path_type": path_type_str,
             "path_ptr": int(event.path_ptr),
             "parent_rel_ptr": int(event.parent_rel_ptr),
@@ -327,7 +335,7 @@ class PlanAlternativesTracer:
                     rel_extra += f", parent_rti={event.parent_relid}"
                 if event.relid:
                     rel_extra += f", parent_oid={event.relid}"
-                if event.join_type or event.inner_relid or event.outer_relid:
+                if path_type_str in self.JOIN_PATH_TYPES:
                     rel_extra += f", join={join_type_str}"
                 if event.outer_relid:
                     rel_extra += f", outer_rti={event.outer_relid}"
@@ -338,12 +346,12 @@ class PlanAlternativesTracer:
                 if event.inner_rel_oid:
                     rel_extra += f", inner_oid={event.inner_rel_oid}"
                 msg = (
-                    f"[{time_str}] [PID {pid}] ADD_PATH: {path_type_str} "
+                    f"[{time_str}] [PID {pid}] ADD_PATH: {path_type_str} [{path_node_type_str}] "
                     f"(startup={startup_cost:.2f}, total={total_cost:.2f}, rows={rows}{rel_extra})"
                 )
             elif event_type == TraceEvents.CREATE_PLAN:
                 msg = (
-                    f"[{time_str}] [PID {pid}] CREATE_PLAN: {path_type_str} "
+                    f"[{time_str}] [PID {pid}] CREATE_PLAN: {path_type_str} [{path_node_type_str}] "
                     f"(startup={startup_cost:.2f}, total={total_cost:.2f}) [CHOSEN]"
                 )
             else:

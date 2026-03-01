@@ -25,10 +25,11 @@ typedef struct PlanEvent {
   u32 inner_path_type;
 
   // Path information
-  u32 path_type;     // NodeTag type
-  u64 startup_cost;  // Cost_startup (converted to fixed-point)
-  u64 total_cost;    // Cost_total (converted to fixed-point)
-  u64 rows;          // Plan rows estimate
+  u32 path_node_type;  // Path.type NodeTag (e.g. T_ProjectionPath)
+  u32 path_type;       // NodeTag type
+  u64 startup_cost;    // Cost_startup (converted to fixed-point)
+  u64 total_cost;      // Cost_total (converted to fixed-point)
+  u64 rows;            // Plan rows estimate
 
   // Parent relation info
   u32 parent_relid;  // Parent range-table index (RelOptInfo.relid)
@@ -193,6 +194,10 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
   bpf_probe_read_user(&parent_rel, sizeof(parent_rel),
                       path + OFFSET_PATH_PARENT);
   event->parent_rel_ptr = (u64)parent_rel;
+
+  // Path.type (concrete path struct NodeTag)
+  bpf_probe_read_user(&event->path_node_type, sizeof(u32),
+                      path + OFFSET_PATH_TYPE);
 
   // Path.pathtype
   bpf_probe_read_user(&event->path_type, sizeof(u32),
