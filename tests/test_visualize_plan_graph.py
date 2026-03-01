@@ -72,6 +72,35 @@ class TestPlanVisualizerDedup(unittest.TestCase):
             },
         )
 
+    def test_chosen_node_label_always_includes_type_field(self):
+        self.visualizer.plans_by_pid[1] = [
+            {
+                "timestamp": 100,
+                "pid": 1,
+                "event_type": "ADD_PATH",
+                "path_ptr": 4242,
+                "path_type": "T_SeqScan",
+                "path_node_type_name": "Path",
+                "startup_cost": 0,
+                "total_cost": 10,
+                "rows": 5,
+                "parent_rti": 1,
+                "parent_rel_oid": 26144,
+            }
+        ]
+        self.visualizer.chosen_plans[1] = [
+            {
+                "timestamp": 101,
+                "pid": 1,
+                "event_type": "CREATE_PLAN",
+                "path_ptr": 4242,
+            }
+        ]
+
+        dot = self.visualizer.create_graph(1)
+
+        self.assertIn("[CHOSEN]\nType: Path\nStartup:", dot.source)
+
 
 if __name__ == "__main__":
     unittest.main()

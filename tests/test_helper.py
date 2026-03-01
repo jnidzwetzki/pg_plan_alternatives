@@ -89,6 +89,7 @@ class TestDwarfOffsetHelper(unittest.TestCase):
     def _valid_struct_members(self):
         return {
             "Path": {
+                "type": 0,
                 "pathtype": 4,
                 "parent": 8,
                 "rows": 40,
@@ -106,6 +107,7 @@ class TestDwarfOffsetHelper(unittest.TestCase):
     def test_map_required_offsets(self):
         offsets = DwarfOffsetHelper.map_required_offsets(self._valid_struct_members())
 
+        self.assertEqual(offsets["OFFSET_PATH_TYPE"], 0)
         self.assertEqual(offsets["OFFSET_PATH_PATHTYPE"], 4)
         self.assertEqual(offsets["OFFSET_RELOPTINFO_RELID"], 112)
         self.assertEqual(offsets["OFFSET_RANGETBLENTRY_RELID"], 28)
@@ -123,6 +125,7 @@ class TestDwarfOffsetHelper(unittest.TestCase):
         offsets = DwarfOffsetHelper.map_required_offsets(self._valid_struct_members())
         defines = DwarfOffsetHelper.offsets_to_defines(offsets)
 
+        self.assertIn("#define OFFSET_PATH_TYPE 0", defines)
         self.assertIn("#define OFFSET_PATH_PATHTYPE 4", defines)
         self.assertIn("#define OFFSET_JOINPATH_OUTERJOINPATH 80", defines)
         self.assertIn("#define OFFSET_RANGETBLENTRY_RTEKIND 24", defines)

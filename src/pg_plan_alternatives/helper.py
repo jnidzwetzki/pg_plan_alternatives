@@ -65,6 +65,7 @@ class DwarfOffsetHelper:
     """Resolve struct field offsets from DWARF debug information."""
 
     REQUIRED_FIELDS: dict[str, tuple[str, str]] = {
+        "OFFSET_PATH_TYPE": ("Path", "type"),
         "OFFSET_PATH_PATHTYPE": ("Path", "pathtype"),
         "OFFSET_PATH_PARENT": ("Path", "parent"),
         "OFFSET_PATH_ROWS": ("Path", "rows"),
