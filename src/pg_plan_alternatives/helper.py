@@ -72,6 +72,7 @@ class DwarfOffsetHelper:
         "OFFSET_PATH_TOTAL_COST": ("Path", "total_cost"),
         "OFFSET_PROJECTIONPATH_SUBPATH": ("ProjectionPath", "subpath"),
         "OFFSET_SORTPATH_SUBPATH": ("SortPath", "subpath"),
+        "OFFSET_AGGPATH_SUBPATH": ("AggPath", "subpath"),
         "OFFSET_RELOPTINFO_RELID": ("RelOptInfo", "relid"),
         "OFFSET_JOINPATH_JOINTYPE": ("JoinPath", "jointype"),
         "OFFSET_JOINPATH_OUTERJOINPATH": ("JoinPath", "outerjoinpath"),

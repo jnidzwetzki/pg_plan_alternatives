@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM test1 GROUP BY id;

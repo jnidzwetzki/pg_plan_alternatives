@@ -228,7 +228,7 @@ Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
 Received event: PID=1723791, Type=CREATE_PLAN, PathType=T_IndexOnlyScan
 ```
 
-This indicates that regular sequential scans, index only scans, and sorting plans are all considered by the optimizer. 
+This indicates that regular sequential scans, index only scans, and sorting plans are all considered by the optimizer.
 
 ```
 EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 ORDER BY id;
@@ -244,8 +244,55 @@ EXPLAIN (VERBOSE, ANALYZE) SELECT * FROM test1 ORDER BY id;
 
 ![Select plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select_order.svg)
 
-In the final plan, the optimizer has chosen an `Index Only Scan` and delivered the tuples already in the correct order with the estimated cost of `43.27`. The visualization of the alternatives shows that using a sequential scan with a sort would have a much higher estimated cost of `67.329`.
+In the final plan, the optimizer chose an `Index Only Scan` and delivered the tuples in the correct order, with an estimated cost of `43.27`. The visualization of the alternatives shows that using a sequential scan with a sort would have a much higher estimated cost of `67.329`. The final `T_Result` node in the alternative plan is an internal PostgreSQL plan node used for operations such as projections. 
 
+### SELECT with an aggregate function and GROUP BY
+
+When an aggregate function is added to the query, the optimizer considers additional plans that involve aggregation. For example:
+
+```sql
+SELECT id, COUNT(*) FROM test1 GROUP BY id;
+```
+
+The tracer output shows the following alternatives being considered by the optimizer:
+
+```
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_SeqScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Agg
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Sort
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Agg
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Agg
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_SeqScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Agg
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_SeqScan
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_Agg
+Received event: PID=1723791, Type=ADD_PATH, PathType=T_IndexOnlyScan
+Received event: PID=1723791, Type=CREATE_PLAN, PathType=T_Agg
+Received event: PID=1723791, Type=CREATE_PLAN, PathType=T_SeqScan
+```
+
+The query plan in PostgreSQL for this query looks like this:
+
+```
+jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT COUNT(*) FROM test1 GROUP BY id;
+                                                    QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=20.00..30.00 rows=1000 width=12) (actual time=3.171..4.009 rows=1000 loops=1)
+   Output: count(*), id
+   Group Key: test1.id
+   Batches: 1  Memory Usage: 193kB
+   ->  Seq Scan on public.test1  (cost=0.00..15.00 rows=1000 width=4) (actual time=0.176..0.769 rows=1000 loops=1)
+         Output: id
+ Planning Time: 2.297 ms
+ Execution Time: 4.637 ms
+(8 rows)
+```
+
+And the tracer shows a few alternatives for the aggregation, like performing sorting or using an index scan instead of a sequential scan. 
+
+![Select with aggregate plan alternatives](https://raw.githubusercontent.com/jnidzwetzki/pg_plan_alternatives/refs/heads/main/examples/select_group.svg)
 
 ### JOIN
 
@@ -453,6 +500,7 @@ The implementation uses pointer-based tracking plus timestamp/type disambiguatio
 ## ⚠️ Known Limitations
 
 - ⚠️ Early prototype implementation without extensive testing.
+- Only some node types are currently supported.
 - Requires PostgreSQL to be compiled with debug symbols to be able to attach the eBPF uprobes (see below).
 - Parallel plans are not currently supported (the `add_partial_path()` function is not instrumented).
 

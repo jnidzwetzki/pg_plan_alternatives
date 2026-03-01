@@ -165,6 +165,7 @@ class PlanAlternativesTracer:
             "T_HashJoin",
             "T_Result",
             "T_Sort",
+            "T_Agg",
         ]
         for nodetag_name in nodetag_names:
             try:

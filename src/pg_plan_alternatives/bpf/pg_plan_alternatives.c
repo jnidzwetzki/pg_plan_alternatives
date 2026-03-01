@@ -233,6 +233,15 @@ static int fill_plan_event_from_path(void *path, PlanEvent *event,
       fill_rel_identity_from_path(outer, &event->outer_relid,
                                   &event->outer_rel_oid);
     }
+  } else if (event->path_type == NODETAG_T_Agg) {
+    bpf_probe_read_user(&outer, sizeof(outer), path + OFFSET_AGGPATH_SUBPATH);
+    event->outer_path_ptr = (u64)outer;
+    if (outer) {
+      bpf_probe_read_user(&event->outer_path_type, sizeof(u32),
+                          outer + OFFSET_PATH_PATHTYPE);
+      fill_rel_identity_from_path(outer, &event->outer_relid,
+                                  &event->outer_rel_oid);
+    }
   }
 
   // JoinPath-style binary nodes.

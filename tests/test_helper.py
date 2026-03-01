@@ -97,6 +97,7 @@ class TestDwarfOffsetHelper(unittest.TestCase):
             },
             "ProjectionPath": {"subpath": 64},
             "SortPath": {"subpath": 64},
+            "AggPath": {"subpath": 72},
             "RelOptInfo": {"relid": 112},
             "JoinPath": {"jointype": 72, "outerjoinpath": 80, "innerjoinpath": 88},
             "RangeTblEntry": {"rtekind": 24, "relid": 28},
