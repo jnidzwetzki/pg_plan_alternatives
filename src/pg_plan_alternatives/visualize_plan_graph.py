@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=too-many-lines
 #
 # PostgreSQL Plan Alternatives Visualizer
 #
@@ -230,11 +231,118 @@ class PlanVisualizer:
         return (pid, join_type_name, outer_rti, inner_rti, outer_rel_oid, inner_rel_oid)
 
     @staticmethod
+    def _parent_rel_cluster_sort_key(cluster_key):
+        """Sort parent-rel clusters deterministically for stable graph layout."""
+        pid, parent_rel_ptr = cluster_key
+        return (pid, parent_rel_ptr)
+
+    @staticmethod
     def _format_cost(cost):
         """Format costs with enough precision to differentiate alternatives."""
         # Use 3 decimals to keep labels compact while preserving planner-level
         # distinctions (e.g., 16.595 vs 16.600).
         return f"{float(cost):.3f}"
+
+    @staticmethod
+    def _selection_equivalence_key(event):
+        """Return a semantic key for mapping CREATE_PLAN nodes to ADD_PATH peers."""
+        return (
+            event.get("pid", 0),
+            event.get("path_type", ""),
+            round(float(event.get("startup_cost", 0.0)), 6),
+            round(float(event.get("total_cost", 0.0)), 6),
+            int(event.get("rows", 0)),
+            int(event.get("parent_rel_oid", 0)),
+            int(event.get("join_type", 0)),
+            event.get("join_type_name", ""),
+            int(event.get("outer_rti", 0)),
+            int(event.get("inner_rti", 0)),
+            int(event.get("outer_rel_oid", 0)),
+            int(event.get("inner_rel_oid", 0)),
+        )
+
+    @staticmethod
+    def _event_specificity(event):
+        """Return a specificity score for choosing best representative."""
+        has_parent_rti = 1 if int(event.get("parent_rti", 0)) else 0
+        has_parent_oid = 1 if int(event.get("parent_rel_oid", 0)) else 0
+        has_join_rti = (
+            1 if int(event.get("outer_rti", 0)) or int(event.get("inner_rti", 0)) else 0
+        )
+        has_join_oid = (
+            1
+            if int(event.get("outer_rel_oid", 0)) or int(event.get("inner_rel_oid", 0))
+            else 0
+        )
+        has_parent_ptr = 1 if int(event.get("parent_rel_ptr", 0)) else 0
+
+        # Prefer relation-identifiable events first, then join identity,
+        # then generic parent-rel pointer availability.
+        return (
+            has_parent_rti * 16
+            + has_parent_oid * 8
+            + has_join_rti * 4
+            + has_join_oid * 2
+            + has_parent_ptr
+        )
+
+    def _promote_chosen_node(self, node_id, node_to_event, nodes_by_equivalence):
+        """Prefer richer ADD_PATH node when CREATE_PLAN matches a duplicate."""
+        event = node_to_event.get(node_id)
+        if not event:
+            return node_id
+
+        if int(event.get("parent_rti", 0)):
+            return node_id
+
+        candidates = nodes_by_equivalence.get(
+            self._selection_equivalence_key(event), []
+        )
+        if len(candidates) <= 1:
+            return node_id
+
+        return max(
+            candidates,
+            key=lambda candidate_node: self._event_specificity(
+                node_to_event[candidate_node]
+            ),
+        )
+
+    def _representative_event_indices(self, events):
+        """Return event indices to render after semantic duplicate suppression."""
+        candidates_by_key = defaultdict(list)
+        for event_index, event in enumerate(events):
+            candidates_by_key[self._selection_equivalence_key(event)].append(
+                (event_index, event)
+            )
+
+        keep_indices = set()
+        for candidates in candidates_by_key.values():
+            best_index = None
+            best_specificity = -1
+            best_timestamp = 0
+
+            for event_index, event in candidates:
+                specificity = self._event_specificity(event)
+                event_ts = int(event.get("timestamp", 0))
+
+                if best_index is None:
+                    best_index = event_index
+                    best_specificity = specificity
+                    best_timestamp = event_ts
+                    continue
+
+                if specificity > best_specificity or (
+                    specificity == best_specificity and event_ts < best_timestamp
+                ):
+                    best_index = event_index
+                    best_specificity = specificity
+                    best_timestamp = event_ts
+
+            if best_index is not None:
+                keep_indices.add(best_index)
+
+        return keep_indices
 
     @staticmethod
     def _is_base_relation_access(path_type):
@@ -243,6 +351,26 @@ class PlanVisualizer:
             return False
 
         return path_type.endswith("Scan")
+
+    @staticmethod
+    def _has_lineage_relationship(src_event, dst_event):
+        """Return True if events are directly linked as parent/child paths."""
+        src_path_ptr = int(src_event.get("path_ptr", 0))
+        dst_path_ptr = int(dst_event.get("path_ptr", 0))
+        if not src_path_ptr or not dst_path_ptr:
+            return False
+
+        src_outer = int(src_event.get("outer_path_ptr", 0))
+        src_inner = int(src_event.get("inner_path_ptr", 0))
+        dst_outer = int(dst_event.get("outer_path_ptr", 0))
+        dst_inner = int(dst_event.get("inner_path_ptr", 0))
+
+        return (
+            src_outer == dst_path_ptr
+            or src_inner == dst_path_ptr
+            or dst_outer == src_path_ptr
+            or dst_inner == src_path_ptr
+        )
 
     def create_graph(self, pid=None):
         """Create a graph for a specific PID or all PIDs"""
@@ -284,12 +412,15 @@ class PlanVisualizer:
         # Track nodes by path type to group similar plans
         nodes_by_type = defaultdict(list)
         nodes_by_relation = defaultdict(list)
+        nodes_by_parent_rel = defaultdict(list)
         relation_cluster_nodes = defaultdict(list)
         join_cluster_nodes = defaultdict(list)
+        parent_rel_cluster_nodes = defaultdict(list)
         event_records = []
         node_to_event = {}
         node_is_base_access = {}
         nodes_by_path_ptr = defaultdict(list)
+        nodes_by_equivalence = defaultdict(list)
 
         # Process in timestamp order and deduplicate identical ADD_PATH re-adds.
         events = sorted(events, key=lambda e: e.get("timestamp", 0))
@@ -333,8 +464,20 @@ class PlanVisualizer:
             if inner_path_ptr:
                 referenced_path_ptrs.add((event_pid, inner_path_ptr))
 
+        chosen_path_ptrs = set()
+        for chosen_event in chosen:
+            chosen_pid = chosen_event.get("pid", pid)
+            chosen_path_ptr = int(chosen_event.get("path_ptr", 0))
+            if chosen_path_ptr:
+                chosen_path_ptrs.add((chosen_pid, chosen_path_ptr))
+
+        representative_event_indices = self._representative_event_indices(events)
+
         # Add nodes for each considered path
         for i, event in enumerate(events):
+            if i not in representative_event_indices:
+                continue
+
             path_type = event.get("path_type", "Unknown")
             startup_cost = event.get("startup_cost", 0)
             total_cost = event.get("total_cost", 0)
@@ -352,11 +495,12 @@ class PlanVisualizer:
             # relation identity and no join linkage. These can occur if tracing
             # captured transient/invalid planner states and only add noise.
             path_ptr = int(event.get("path_ptr", 0))
-            if (
-                parent_rti == 0
-                and inner_rti == 0
-                and outer_rti == 0
-                and (event_pid, path_ptr) not in referenced_path_ptrs
+            parent_rel_ptr = int(event.get("parent_rel_ptr", 0))
+            if self._is_isolated_base_path(
+                event,
+                event_pid,
+                referenced_path_ptrs,
+                chosen_path_ptrs,
             ):
                 continue
 
@@ -393,6 +537,8 @@ class PlanVisualizer:
                     (event.get("timestamp", 0), node_id, path_type)
                 )
 
+            nodes_by_equivalence[self._selection_equivalence_key(event)].append(node_id)
+
             rel_key = (event_pid, parent_rti)
             if parent_rti:
                 nodes_by_relation[rel_key].append(node_id)
@@ -411,6 +557,10 @@ class PlanVisualizer:
                     inner_rel_oid,
                 )
                 join_cluster_nodes[join_cluster_key].append((node_id, event))
+            elif parent_rel_ptr:
+                parent_rel_key = (event_pid, parent_rel_ptr)
+                nodes_by_parent_rel[parent_rel_key].append(node_id)
+                parent_rel_cluster_nodes[parent_rel_key].append((node_id, event))
 
             event_records.append((node_id, event))
 
@@ -494,6 +644,33 @@ class PlanVisualizer:
                 ):
                     join_cluster.node(node_id)
 
+        # Group non-RTI alternatives (e.g. AggPath) by parent_rel_ptr.
+        for cluster_index, cluster_key in enumerate(
+            sorted(
+                parent_rel_cluster_nodes.keys(), key=self._parent_rel_cluster_sort_key
+            )
+        ):
+            event_pid, parent_rel_ptr = cluster_key
+            cluster_name = f"cluster_parent_rel_{cluster_index}"
+            with dot.subgraph(name=cluster_name) as parent_cluster:  # type: ignore
+                parent_cluster.attr(
+                    label=f"Derived relation {parent_rel_ptr}",
+                    color="gray55",
+                    style="rounded,dashed",
+                    penwidth="1.2",
+                    fontname="Arial",
+                    fontsize="10",
+                )
+                if pid is None:
+                    parent_cluster.attr(
+                        label=f"PID {event_pid} • Derived relation {parent_rel_ptr}"
+                    )
+                for node_id, _ in sorted(
+                    parent_rel_cluster_nodes[cluster_key],
+                    key=lambda item: item[1].get("timestamp", 0),
+                ):
+                    parent_cluster.node(node_id)
+
         # Connect progression per relation.
         for rel_key, rel_nodes in nodes_by_relation.items():
             if len(rel_nodes) <= 1:
@@ -501,6 +678,20 @@ class PlanVisualizer:
             for i in range(len(rel_nodes) - 1):
                 src_node = rel_nodes[i]
                 dst_node = rel_nodes[i + 1]
+                src_event = node_to_event[src_node]
+                dst_event = node_to_event[dst_node]
+                if self._has_lineage_relationship(src_event, dst_event):
+                    continue
+                if (
+                    src_event.get("path_type") == "T_Agg"
+                    and dst_event.get("path_type") == "T_Agg"
+                ):
+                    continue
+                if (
+                    src_event.get("path_type") == "T_Sort"
+                    and dst_event.get("path_type") == "T_Agg"
+                ):
+                    continue
                 if node_is_base_access.get(src_node) and node_is_base_access.get(
                     dst_node
                 ):
@@ -521,6 +712,37 @@ class PlanVisualizer:
                         constraint="false",
                     )
 
+        # Connect progression within non-RTI parent-rel groups.
+        for parent_rel_key, rel_nodes in nodes_by_parent_rel.items():
+            if len(rel_nodes) <= 1:
+                continue
+            for i in range(len(rel_nodes) - 1):
+                src_node = rel_nodes[i]
+                dst_node = rel_nodes[i + 1]
+                src_event = node_to_event[src_node]
+                dst_event = node_to_event[dst_node]
+                if self._has_lineage_relationship(src_event, dst_event):
+                    continue
+                if (
+                    src_event.get("path_type") == "T_Agg"
+                    and dst_event.get("path_type") == "T_Agg"
+                ):
+                    continue
+                if (
+                    src_event.get("path_type") == "T_Sort"
+                    and dst_event.get("path_type") == "T_Agg"
+                ):
+                    continue
+                dot.edge(
+                    src_node,
+                    dst_node,
+                    style="dashed",
+                    color="gray50",
+                    xlabel="alt",
+                    constraint="false",
+                    arrowhead="none",
+                )
+
         # Use CREATE_PLAN events only to identify matching ADD_PATH nodes.
         chosen_node_ids = set()
         for chosen_event in sorted(chosen, key=lambda e: e.get("timestamp", 0)):
@@ -536,7 +758,13 @@ class PlanVisualizer:
                 chosen_event.get("timestamp", 0),
             )
             if direct_node:
-                chosen_node_ids.add(direct_node)
+                chosen_node_ids.add(
+                    self._promote_chosen_node(
+                        direct_node,
+                        node_to_event,
+                        nodes_by_equivalence,
+                    )
+                )
 
         # Re-style only matched chosen ADD_PATH nodes
         for chosen_node_id in chosen_node_ids:
@@ -587,7 +815,11 @@ class PlanVisualizer:
                     event.get("outer_path_type_name"),
                 )
                 if outer_node and outer_node != node_id:
-                    outer_edge_label = "subpath" if path_type == "T_Sort" else "outer"
+                    outer_edge_label = (
+                        "subpath"
+                        if path_type in ("T_Sort", "T_Agg", "T_Result")
+                        else "outer"
+                    )
                     dot.edge(
                         outer_node,
                         node_id,
@@ -624,10 +856,16 @@ class PlanVisualizer:
                     dot.edge(nodes[i][0], nodes[i + 1][0], style="invis")
 
         # Add summary statistics
-        if events:
-            total_plans = len(events)
-            cheapest_plan = min(events, key=lambda e: e.get("total_cost", float("inf")))
-            most_expensive_plan = max(events, key=lambda e: e.get("total_cost", 0))
+        rendered_events = [event for _node_id, event in event_records]
+
+        if rendered_events:
+            total_plans = len(rendered_events)
+            cheapest_plan = min(
+                rendered_events, key=lambda e: e.get("total_cost", float("inf"))
+            )
+            most_expensive_plan = max(
+                rendered_events, key=lambda e: e.get("total_cost", 0)
+            )
 
             stats_label = (
                 f"Statistics\\n"
@@ -706,6 +944,37 @@ class PlanVisualizer:
             selected_node = prev_candidate[1]
 
         return selected_node
+
+    def _is_isolated_base_path(  # pylint: disable=too-many-boolean-expressions
+        self,
+        event,
+        event_pid,
+        referenced_path_ptrs,
+        chosen_path_ptrs,
+    ):
+        """Return True when *event* represents a stray base-path with no
+        identifying relation or join links and no later references.
+
+        The large boolean expression that used to live inline in
+        :meth:`create_graph` was extracted here so that pylint's
+        ``too-many-boolean-expressions`` check is satisfied.
+        """
+        parent_rti = int(event.get("parent_rti", 0))
+        inner_rti = int(event.get("inner_rti", 0))
+        outer_rti = int(event.get("outer_rti", 0))
+        parent_rel_ptr = int(event.get("parent_rel_ptr", 0))
+        path_ptr = int(event.get("path_ptr", 0))
+
+        if (
+            parent_rti == 0
+            and inner_rti == 0
+            and outer_rti == 0
+            and parent_rel_ptr == 0
+            and (event_pid, path_ptr) not in referenced_path_ptrs
+            and (event_pid, path_ptr) not in chosen_path_ptrs
+        ):
+            return True
+        return False
 
     def visualize(self):
         """Create visualization"""

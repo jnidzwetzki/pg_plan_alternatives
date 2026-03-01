@@ -1,0 +1,1 @@
+SELECT * FROM test1 LEFT JOIN test2 ON (test1.id = test2.id) WHERE test1.id=123;

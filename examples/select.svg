@@ -72,7 +72,7 @@
 <polyline fill="none" stroke="black" points="225,-401 225,-395 "/>
 <polyline fill="none" stroke="black" points="231,-395 225,-395 "/>
 <text text-anchor="middle" x="136.5" y="-389.8" font-family="Arial" font-size="9.00">Statistics</text>
-<text text-anchor="middle" x="136.5" y="-379.8" font-family="Arial" font-size="9.00">Total paths considered: 4</text>
+<text text-anchor="middle" x="136.5" y="-379.8" font-family="Arial" font-size="9.00">Total paths considered: 3</text>
 <text text-anchor="middle" x="136.5" y="-369.8" font-family="Arial" font-size="9.00">Cheapest: T_SeqScan (15.00)</text>
 <text text-anchor="middle" x="136.5" y="-359.8" font-family="Arial" font-size="9.00">Most expensive: T_IndexOnlyScan (43.27)</text>
 </g>
