@@ -279,7 +279,7 @@ Received event: PID=1723791, Type=CREATE_PLAN, PathType=T_SeqScan
 The query plan in PostgreSQL for this query looks like this:
 
 ```
-jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT COUNT(*) FROM test1 GROUP BY id;
+jan2=# EXPLAIN (VERBOSE, ANALYZE) SELECT id, COUNT(*) FROM test1 GROUP BY id;
                                                     QUERY PLAN
 -------------------------------------------------------------------------------------------------------------------
  HashAggregate  (cost=20.00..30.00 rows=1000 width=12) (actual time=3.171..4.009 rows=1000 loops=1)
