@@ -6,7 +6,7 @@
 [![Release date](https://img.shields.io/github/release-date/jnidzwetzki/pg_plan_alternatives)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 [![GitHub Repo stars](https://img.shields.io/github/stars/jnidzwetzki/pg_plan_alternatives?style=social)](https://github.com/jnidzwetzki/pg_plan_alternatives/)
 
-<div align="center"><img src="docs/pg_plan_alternatives.png" width="30%"></div>
+<div align="center"><img src="https://github.com/jnidzwetzki/pg_plan_alternatives/raw/main/docs/pg_plan_alternatives.png" width="30%"></div>
 
 An eBPF-based tool designed to show **all query plans** that are considered by PostgreSQL during query planning, not just the final chosen plan as shown in `EXPLAIN` output. 
 
