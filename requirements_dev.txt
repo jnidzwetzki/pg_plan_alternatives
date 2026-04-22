@@ -1,5 +1,5 @@
 pytest>=7.0.0
-pytest-cov>=4.0.0
+pytest-cov>=7.1.0
 pylint>=2.15.0
 black>=22.0.0
 mypy>=0.990
