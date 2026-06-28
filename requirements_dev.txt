@@ -1,6 +1,6 @@
 pytest>=9.0.3
 pytest-cov>=7.1.0
-pylint>=4.0.5
+pylint>=4.0.6
 black>=26.3.1
 mypy>=1.20.2
 graphviz>=0.20
